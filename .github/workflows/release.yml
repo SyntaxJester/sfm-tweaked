@@ -33,11 +33,12 @@ jobs:
           VER=$(grep '^version=' module.prop | cut -d= -f2)
           TAG="${GITHUB_REF_NAME:-manual}"
           NAME="SingBox_For_Magisk-tweaked-${VER}-${TAG}.zip"
-          # 只打包刷入需要的内容，排开发文件
+          # 只打包刷入需要的内容 + 署名文件，排开发文件
           zip -r -q "$NAME" \
             META-INF sfm webroot \
             base.apk customize.sh handle keycheck module.prop \
             post-fs-data.sh service.sh uninstall.sh \
+            CREDITS.md LICENSE UPSTREAM_SHA256.txt \
             -x '.git/*' -x '.github/*' -x 'tools/*' -x 'docs/*'
           echo "name=$NAME" >> "$GITHUB_OUTPUT"
           echo "sha=$(sha256sum "$NAME" | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
