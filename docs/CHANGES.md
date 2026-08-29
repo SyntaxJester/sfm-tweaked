@@ -346,8 +346,10 @@ reboot
 
 - **没动 `bundle` / `converter`** — 都是 esbuild 压缩产物，`route.ip_rules` 那个 bug
   只能改 JS 修，改了以后模块更新就会覆盖掉，不划算。写进文档提醒别用即可
-- **没换 `singBox`** — fork 专有字段（`fallback_rules` 等）在上游 sing-box 里不存在，
-  换官方内核这套配置直接废掉
+- **没换 `singBox`** — fork 专有字段（`fallback_rules` / `sniff_override_rules` /
+  `providers` 等）在上游 sing-box 里不存在，换官方内核这套配置直接废掉。
+  fork 的 `building` 分支本身也停更在 2024-08-15，且其它更新的分支都不带这些字段。
+  详细分析见 [KERNEL.md](KERNEL.md)
 - **没在真机验证** — 沙盒是 PRoot Alpine，`singBox` 需要 `/system/bin/linker64`，跑不起来；
   `/data/adb` 也不可见。所有结论来自二进制字段提取 + 上游源码比对 + URL 实测，
   内核层面的最终确认要靠你在设备上跑 `singBox check`

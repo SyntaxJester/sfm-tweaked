@@ -370,6 +370,34 @@ Array.isArray(h.route.ip_rules) ? h.route.rules = h.route.ip_rules.filter(...) :
 
 ---
 
+## 关于内核版本
+
+模块内核是 PuerNya fork 的 `building` 分支 HEAD（`067c81a7`，2024-08-15），
+基线 `1.10.0-alpha.29`。官方 sing-box 现在已经是 `v1.13.20`。
+
+**这个内核不能升级，也不需要为此焦虑。** 简要说明：
+
+- fork 的 `building` 分支本身就停在 2024-08-15，之后没有更新
+- fork 的其它 32 个分支里有更新的（`dev-next` 2026-01、`respond-fix` 2026-04），
+  但**没有一个带模块必需的专有字段** —— 它们是跟随上游的 feature 分支，
+  `building` 才是把专有功能合起来出包的分支
+- 换官方内核的话，本配置有 **62 处结构性改写**（1.11 起 `outbound` → `action`，
+  1.12 起 DNS servers/rules 重构）外加 **21 处 fork 专有字段无法翻译**
+  （`fallback_rules` / `sniff_override_rules` / `providers` 等官方根本没有）
+- `bundle` 面板生成 `box.json` 的整套流水线也是按 1.10 的 schema 写的，
+  它不认识 `action` / `domain_resolver` / `endpoints` 这些新概念
+
+安全方面查过了：sing-box 唯一的公开 CVE（CVE-2023-43644，SOCKS 认证绕过）
+影响 `< 1.5.0-rc.5`，本内核不受影响。真正的风险点是配置里的开放代理，
+见下面的安全提示。
+
+需要官方新特性（AnyTLS、Tailscale、kTLS 等）请换跟随上游的客户端，
+在这个模块上折腾内核版本走不通。
+
+完整分析、含每一步的复核命令，见 [docs/KERNEL.md](docs/KERNEL.md)。
+
+---
+
 ## 安全提示
 
 `mixed` 入站是 `listen: '::'` 且没有 `users` —— 同一 Wi-Fi 下任何设备都能免密码
