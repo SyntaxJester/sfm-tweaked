@@ -33,6 +33,9 @@ This license covers ONLY the files authored by the repository owner:
   - sfm/RuleProviders/推送服务-域名.json
   - sfm/RuleProviders/跳过覆写.json
   - sfm/RuleProviders/路由后台-域名.json
+  - module.prop                      (version / versionCode / name / author
+                                      fields only; the file itself originates
+                                      from the module author)
   - tools/validate_baseconfig.py
   - README.md, CREDITS.md, docs/*, .github/*
 
@@ -46,7 +49,7 @@ Magisk module "神秘啊神秘" / SingBox_For_Magisk, authored by Puer_Nya
   - handle, keycheck   helper binaries
   - base.apk           bundled companion app
   - customize.sh, service.sh, post-fs-data.sh, uninstall.sh
-  - module.prop, webroot/, META-INF/
+  - webroot/, META-INF/
   - sfm/Dashboard/, sfm/src/maho/
   - sfm/src/config.yaml, sfm/src/FileProviders/*
   - sfm/RuleProviders/*.srs

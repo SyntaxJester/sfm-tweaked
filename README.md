@@ -18,7 +18,8 @@ Magisk / KernelSU / APatch 模块 **神秘啊神秘（SingBox_For_Magisk）** �
 |---|---|
 | 原模块 | 神秘啊神秘 / `SingBox_For_Magisk` |
 | **原作者** | **Puer_Nya** — GitHub [@PuerNya](https://github.com/PuerNya) |
-| 基于版本 | `version=202408160739` / `versionCode=8` |
+| 基于原版 | `version=202408160739` / `versionCode=8` |
+| 本版本 | `version=202608292125` / `versionCode=9` |
 | 内核 | [PuerNya/sing-box](https://github.com/PuerNya/sing-box) fork，基线 `1.10.0-alpha.29-067c81a7` |
 
 **模块的全部功能实现都是原作者的作品** —— 定制 sing-box 内核、Node.js 面板、
@@ -38,7 +39,7 @@ Magisk / KernelSU / APatch 模块 **神秘啊神秘（SingBox_For_Magisk）** �
 
 ## 与原版的差异
 
-`git diff` 只有 7 个文件，其余 58 个文件与原版 sha256 完全一致：
+改动只有 7 个文件，其余 **58 个文件与原版 sha256 完全一致**：
 
 | 文件 | 变化 |
 |---|---|
@@ -48,17 +49,42 @@ Magisk / KernelSU / APatch 模块 **神秘啊神秘（SingBox_For_Magisk）** �
 | `sfm/RuleProviders/强制直连-域名.json` | 9 → 33 条 |
 | `sfm/RuleProviders/强制代理-域名.json` | 3 → 31 条 |
 | `sfm/RuleProviders/跳过覆写.json` | 7 → 32 条 |
+| `module.prop` | `version` / `versionCode` / 署名，见下 |
 | `tools/`、`docs/` | **新增**，校验器与文档（不参与刷入） |
 
 未改动的包括：`sfm/singBox`、`sfm/bundle`、`sfm/converter`、`handle`、`keycheck`、
 `base.apk`、`customize.sh`、`service.sh`、`post-fs-data.sh`、`uninstall.sh`、
-`module.prop`、`webroot/`、`sfm/Dashboard/`、`sfm/src/maho/`、
-以及 16 个 `.srs` 规则集文件。
+`webroot/`、`sfm/Dashboard/`、`sfm/src/maho/`、`sfm/src/config.yaml`、
+`sfm/src/FileProviders/`、`META-INF/`，以及 16 个 `.srs` 规则集文件。
 
-想自己核对：
+### module.prop 的改动
+
+```diff
+-name=神秘啊神秘
+-version=202408160739
+-versionCode=8
+-author=Puer_Nya
++name=神秘啊神秘（二改版）
++version=202608292125
++versionCode=9
++author=Puer_Nya（二改：SyntaxJester）
+```
+
+改 `version` / `versionCode` 是为了让模块管理器能区分二改版和原版，
+并保证覆盖刷入时不会被 `customize.sh` 里的
+`elif [ ${MODULEVERSION} -lt 8 ]` 判定成「旧 UI」而多做一次管理器缓存清理。
+
+`id` 保持 `SingBox_For_Magisk` 不变 —— 改了会被当成另一个模块，
+数据目录 `/data/adb/sfm` 的增量更新逻辑会失效。
+
+`author` 保留原作者在前，二改者在括号内，模块列表里一眼能看出来源。
+`description` 保持原文不动 —— `service.sh` 会用 `sed -i "6c..."` 按**行号**改写它，
+所以第 6 行必须继续是 `description=`。
+
+想自己核对未改动的部分：
 
 ```bash
-# 在仓库根目录，一条命令校验原作者的 59 个文件
+# 在仓库根目录，一条命令校验原作者的 58 个文件
 sha256sum -c UPSTREAM_SHA256.txt
 ```
 
@@ -197,7 +223,7 @@ HTTPDNS 不拦干净，App 会绕过所有 DNS 规则直接拿真实 IP，分流
 从 [Releases](../../releases) 下载 zip，用 Magisk / KernelSU / APatch 刷入。
 
 zip 里附带了 `CREDITS.md`、`LICENSE` 和 `UPSTREAM_SHA256.txt` ——
-刷入前可以先解开核对原作者的 59 个文件没被动过：
+刷入前可以先解开核对原作者的 58 个文件没被动过：
 
 ```bash
 unzip -q SingBox_For_Magisk-tweaked-*.zip -d /tmp/chk && cd /tmp/chk

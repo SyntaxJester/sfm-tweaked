@@ -6,7 +6,8 @@
 不是原创作品。
 
 - **原作者**：Puer_Nya — GitHub [@PuerNya](https://github.com/PuerNya)
-- **基于版本**：`version=202408160739`，`versionCode=8`
+- **基于原版**：`version=202408160739`，`versionCode=8`
+- **本版本**：`version=202608292125`，`versionCode=9`
 - **模块描述**（原文）：借助魔法的力量使用 sing-box 进行代理
 
 ### 原作者的作品（本仓库原样收录，未作任何修改）
@@ -23,7 +24,6 @@
 | `base.apk` | 附带入口 App（`webapp.shenmi`） | 640 KB |
 | `customize.sh` | 模块安装脚本 | — |
 | `service.sh` / `post-fs-data.sh` / `uninstall.sh` | 启停与卸载脚本 | — |
-| `module.prop` | 模块元信息 | — |
 | `webroot/index.html` | KernelSU / APatch WebUI 入口 | — |
 | `META-INF/` | Magisk 刷机入口 | — |
 | `sfm/Dashboard/index.html` | Clash 面板占位 | — |
@@ -33,14 +33,14 @@
 | `sfm/RuleProviders/*.srs` | 16 个二进制规则集 | — |
 | `sfm/README.md` | 原作者的使用说明 | — |
 
-原模块也自带 `sfm/src/baseConfig.yaml` 配置模板和 `RuleProviders/*.json` 规则集，
-本仓库的同名文件是在其基础上修改的衍生内容。
+原模块也自带 `sfm/src/baseConfig.yaml` 配置模板、`RuleProviders/*.json` 规则集
+和 `module.prop`，本仓库的同名文件是在其基础上修改的衍生内容。
 
 ## 二改者
 
 - [@SyntaxJester](https://github.com/SyntaxJester)
 
-### 改动清单（仅 7 个文件）
+### 改动清单（7 个文件）
 
 | 文件 | 改动 |
 |---|---|
@@ -50,7 +50,11 @@
 | `sfm/RuleProviders/强制直连-域名.json` | 9 → 33 条 |
 | `sfm/RuleProviders/强制代理-域名.json` | 3 → 31 条 |
 | `sfm/RuleProviders/跳过覆写.json` | 7 → 32 条 |
+| `module.prop` | `version` 202408160739 → 202608292125、`versionCode` 8 → 9、`name` 加「（二改版）」、`author` 加二改者。`id` 与 `description` 保持不变 |
 | `tools/`、`docs/`、`.github/` | 新增：配置校验器、内核字段表、文档、CI（均不参与刷入） |
+
+`module.prop` 中 `id` 不改是因为改了会被当成另一个模块，`/data/adb/sfm` 的增量更新逻辑失效；
+`description` 不改是因为 `service.sh` 用 `sed -i "6c..."` 按行号改写它，第 6 行必须继续是它。
 
 **未做**：任何逆向修改、功能重写、二进制替换或重新编译。
 

@@ -1,3 +1,17 @@
+# ============================================================================
+# sfm baseConfig.yaml — 二改版
+#
+# 原模块：神秘啊神秘 / SingBox_For_Magisk
+# 原作者：Puer_Nya  https://github.com/PuerNya
+# 基于原版：version=202408160739 / versionCode=8
+#
+# 二改：SyntaxJester  https://github.com/SyntaxJester/sfm-tweaked
+# 本版本：version=202608292125 / versionCode=9
+# 改动详情见 docs/CHANGES.md
+#
+# 注意：本文件是面板的工作缓存，面板每次保存配置都会重写它（含删除本注释）。
+#       替换前请先 pkill -f 'node /data/adb/sfm/bundle'。
+# ============================================================================
 log:
   disabled: false
   level: error

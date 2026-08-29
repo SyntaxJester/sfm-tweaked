@@ -27,12 +27,23 @@ jobs:
           python3 tools/validate_baseconfig.py sfm/src/baseConfig.yaml tools/kernel_fields.txt
           sha256sum -c UPSTREAM_SHA256.txt
 
+      - name: 检查 tag 与 module.prop 版本一致
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          VER=$(grep '^version=' module.prop | cut -d= -f2)
+          TAG="${GITHUB_REF_NAME#v}"
+          if [ "$VER" != "$TAG" ]; then
+            echo "::error::tag ($TAG) 与 module.prop 的 version ($VER) 不一致"
+            echo "打 tag 前请先同步 module.prop，或用 v${VER} 作为 tag 名"
+            exit 1
+          fi
+          echo "版本一致：$VER"
+
       - name: 打包
         id: pack
         run: |
           VER=$(grep '^version=' module.prop | cut -d= -f2)
-          TAG="${GITHUB_REF_NAME:-manual}"
-          NAME="SingBox_For_Magisk-tweaked-${VER}-${TAG}.zip"
+          NAME="SingBox_For_Magisk-tweaked-${VER}.zip"
           # 只打包刷入需要的内容 + 署名文件，排开发文件
           zip -r -q "$NAME" \
             META-INF sfm webroot \
@@ -41,6 +52,7 @@ jobs:
             CREDITS.md LICENSE UPSTREAM_SHA256.txt \
             -x '.git/*' -x '.github/*' -x 'tools/*' -x 'docs/*'
           echo "name=$NAME" >> "$GITHUB_OUTPUT"
+          echo "ver=$VER" >> "$GITHUB_OUTPUT"
           echo "sha=$(sha256sum "$NAME" | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
           unzip -l "$NAME" | tail -3
 
@@ -53,18 +65,22 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
+          name: v${{ steps.pack.outputs.ver }}
           files: ${{ steps.pack.outputs.name }}
           body: |
-            神秘啊神秘 / SingBox_For_Magisk 二改版
+            神秘啊神秘 二改版 `${{ steps.pack.outputs.ver }}`
 
-            **原模块作者：Puer_Nya（[@PuerNya](https://github.com/PuerNya)）**
+            **原模块作者：Puer_Nya（[@PuerNya](https://github.com/PuerNya)）**，
+            基于原版 `202408160739` / `versionCode=8`。
             本 zip 中的 `singBox` / `bundle` / `converter` / `base.apk` 及全部安装脚本
-            均为原作者作品，原样收录未作修改（可用 `UPSTREAM_SHA256.txt` 校验）。
-            二改内容仅限 `baseConfig.yaml` 与 5 个本地规则集 JSON，详见 CREDITS.md。
+            均为原作者作品，原样收录未作修改 —— 解开 zip 后跑
+            `sha256sum -c UPSTREAM_SHA256.txt` 可逐个核验那 58 个文件。
+            二改内容仅限 `baseConfig.yaml`、5 个本地规则集 JSON 和 `module.prop`，
+            详见 CREDITS.md。
 
             ---
 
-            改动摘要：
+            ### 改动摘要
 
             - 修复 5 个已 404 的规则源（`UptonEdward/sing-geosite` 仓库已删除，
               全新安装会因 `initial rule-set` 失败而起不来）
@@ -73,7 +89,14 @@ jobs:
             - tun 补 `route_exclude_address`，恢复投屏 / DLNA / mDNS / 打印机发现
             - 新增 6 个默认关闭的开关位（BT 拦截、国内 QUIC 拦截等）
 
-            zip sha256: `${{ steps.pack.outputs.sha }}`
+            ### 校验
 
-            刷入前请确认：arm64 设备、已装 Termux 且 `pkg install nodejs aapt`。
-            覆盖刷入的注意事项见 README。
+            ```
+            zip sha256: ${{ steps.pack.outputs.sha }}
+            ```
+
+            ### 刷入前请确认
+
+            arm64 设备、已装 Termux 且在 Termux 里执行过 `pkg install nodejs aapt`。
+            **已装原版的机器覆盖刷入后配置仍是旧的**（原版 `customize.sh` 会还原用户配置），
+            处理方式见 README「覆盖刷入的注意事项」。

@@ -1,6 +1,7 @@
 # sfm 规则提供者 / 路由 / 入站 完善说明
 
-针对 `SingBox_For_Magisk` (`神秘啊神秘` v202408160739) 的配置层改造。
+针对 `SingBox_For_Magisk`（`神秘啊神秘`）原版 v202408160739 的配置层改造，
+本版本 `version=202608292125` / `versionCode=9`。
 只改配置与规则文件，`bundle` / `converter` / `singBox` 三个二进制不动。
 
 > 原模块作者：**Puer_Nya**（[@PuerNya](https://github.com/PuerNya)）。
