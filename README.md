@@ -58,12 +58,11 @@ Magisk / KernelSU / APatch 模块 **神秘啊神秘（SingBox_For_Magisk）** �
 想自己核对：
 
 ```bash
-# 解开原版 zip 到 orig/，本仓库 clone 到 new/
-cd orig && find . -type f -exec sha256sum {} + | sort -k2 > /tmp/a.txt
-cd ../new && find . -type f -not -path './.git/*' -not -path './tools/*' \
-  -not -path './docs/*' -not -path './.github/*' -exec sha256sum {} + | sort -k2 > /tmp/b.txt
-diff /tmp/a.txt /tmp/b.txt
+# 在仓库根目录，一条命令校验原作者的 59 个文件
+sha256sum -c UPSTREAM_SHA256.txt
 ```
+
+全是 `OK` 就说明没动过。详细说明见 [docs/VERIFY.md](docs/VERIFY.md)。
 
 ---
 
@@ -196,6 +195,14 @@ HTTPDNS 不拦干净，App 会绕过所有 DNS 规则直接拿真实 IP，分流
 ### 方式一：直接刷入（推荐）
 
 从 [Releases](../../releases) 下载 zip，用 Magisk / KernelSU / APatch 刷入。
+
+zip 里附带了 `CREDITS.md`、`LICENSE` 和 `UPSTREAM_SHA256.txt` ——
+刷入前可以先解开核对原作者的 59 个文件没被动过：
+
+```bash
+unzip -q SingBox_For_Magisk-tweaked-*.zip -d /tmp/chk && cd /tmp/chk
+sha256sum -c UPSTREAM_SHA256.txt | grep -cv ': OK$'   # 应输出 0
+```
 
 前置条件与原版相同：
 
