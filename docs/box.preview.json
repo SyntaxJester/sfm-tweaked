@@ -1,0 +1,1121 @@
+{
+  "log": {
+    "disabled": false,
+    "level": "error",
+    "output": "./src/log/box.log",
+    "timestamp": true
+  },
+  "dns": {
+    "fakeip": {
+      "enabled": true,
+      "inet4_range": "28.0.0.0/8",
+      "inet6_range": "fc00::/18",
+      "exclude_rule": {
+        "domain_keyword": [
+          "stun",
+          "ntp",
+          "time"
+        ],
+        "domain_suffix": [
+          ".market.xiaomi.com",
+          ".msftncsi.com",
+          ".msftconnecttest.com",
+          ".wotgame.cn",
+          ".wggames.cn",
+          ".wowsgame.cn",
+          ".wargaming.net",
+          ".steamcontent.com",
+          ".local",
+          ".lan",
+          ".home",
+          ".home.arpa",
+          ".internal",
+          ".localdomain",
+          ".arpa"
+        ]
+      }
+    },
+    "hosts": {
+      "dns.pub": [
+        "1.12.12.12",
+        "120.53.53.53"
+      ],
+      "pod.dns": [
+        "119.29.29.29",
+        "2402:4e00::"
+      ],
+      "114.dns": [
+        "114.114.114.114",
+        "114.114.115.115"
+      ],
+      "byte.dns": [
+        "180.184.1.1",
+        "180.184.2.2"
+      ],
+      "router.dns": [
+        "192.168.0.1",
+        "192.168.1.1",
+        "192.168.31.1"
+      ],
+      "dns.alidns.com": [
+        "223.5.5.5",
+        "223.6.6.6",
+        "2400:3200::1",
+        "2400:3200:baba::1"
+      ],
+      "dns.google": [
+        "8.8.4.4",
+        "8.8.8.8",
+        "2001:4860:4860::8844",
+        "2001:4860:4860::8888"
+      ],
+      "dns.quad9.net": [
+        "9.9.9.9",
+        "149.112.112.112",
+        "2620:fe::9",
+        "2620:fe::fe"
+      ],
+      "one.one.one.one": [
+        "1.0.0.1",
+        "1.1.1.1",
+        "2606:4700:4700::1001",
+        "2606:4700:4700::1111"
+      ],
+      "unfiltered.adguard-dns.com": [
+        "94.140.14.140",
+        "94.140.14.141",
+        "2a10:50c0::1:ff",
+        "2a10:50c0::2:ff"
+      ]
+    },
+    "servers": [
+      {
+        "tag": "direct-dns",
+        "address": [
+          "114.dns",
+          "pod.dns",
+          "byte.dns",
+          "dns.alidns.com"
+        ],
+        "detour": "本机直连"
+      },
+      {
+        "tag": "domestic-dns",
+        "address": [
+          "https://dns.pub/dns-query",
+          "https://dns.alidns.com/dns-query"
+        ],
+        "detour": "国内出口"
+      },
+      {
+        "tag": "proxy-nm",
+        "address": [
+          "tcp://dns.google",
+          "tcp://dns.quad9.net",
+          "tcp://one.one.one.one",
+          "tcp://unfiltered.adguard-dns.com"
+        ],
+        "detour": "国外出口"
+      },
+      {
+        "tag": "proxy-ml",
+        "address": [
+          "https://dns.google/dns-query",
+          "https://dns.quad9.net/dns-query",
+          "https://one.one.one.one/dns-query",
+          "https://unfiltered.adguard-dns.com/dns-query"
+        ],
+        "detour": "国外出口"
+      },
+      {
+        "tag": "global-dns",
+        "address": [
+          "https://dns.google/dns-query",
+          "https://dns.quad9.net/dns-query",
+          "https://one.one.one.one/dns-query",
+          "https://unfiltered.adguard-dns.com/dns-query"
+        ],
+        "detour": "全局代理"
+      },
+      {
+        "tag": "outbound-unknown",
+        "address": [
+          "https://dns.pub/dns-query",
+          "https://dns.alidns.com/dns-query"
+        ],
+        "detour": "大厂羊毛"
+      },
+      {
+        "tag": "router-dns",
+        "address": "router.dns",
+        "detour": "本机直连"
+      },
+      {
+        "tag": "fakedns",
+        "address": "fakeip"
+      },
+      {
+        "tag": "nxdomain",
+        "address": "rcode://success"
+      }
+    ],
+    "rules": [
+      {
+        "outbound": [
+          "本机直连",
+          "OUTBOUNDLESS",
+          "大厂羊毛"
+        ],
+        "server": "direct-dns"
+      },
+      {
+        "outbound": "any",
+        "server": "outbound-unknown"
+      },
+      {
+        "rule_set": "广告拦截",
+        "server": "nxdomain",
+        "rewrite_ttl": 0,
+        "disable_cache": true
+      },
+      {
+        "rule_set": [
+          "HTTPDNS-域名",
+          "HTTPDNS-大陆-域名",
+          "虎牙-PCDN｜MCDN-域名",
+          "哔哩哔哩-PCDN｜MCDN-域名"
+        ],
+        "server": "nxdomain",
+        "disable_cache": true
+      },
+      {
+        "domain_suffix": [
+          ".lan",
+          ".local",
+          ".home",
+          ".home.arpa",
+          ".internal",
+          ".localdomain",
+          ".arpa"
+        ],
+        "server": "router-dns"
+      },
+      {
+        "rule_set": [
+          "路由后台-域名",
+          "私有网络-域名"
+        ],
+        "server": "direct-dns"
+      },
+      {
+        "rule_set": "NTP-域名",
+        "server": "direct-dns",
+        "rewrite_ttl": 30
+      },
+      {
+        "clash_mode": [
+          "全局直连-FakeIP",
+          "全局代理-FakeIP",
+          "规则模式-我不免流-FakeIP",
+          "规则模式-我要免流-FakeIP"
+        ],
+        "query_type": [
+          "A",
+          "AAAA"
+        ],
+        "server": "fakedns",
+        "rewrite_ttl": 0,
+        "disable_cache": true
+      },
+      {
+        "clash_mode": [
+          "全局直连-RedirHost",
+          "全局直连-FakeIP"
+        ],
+        "server": "direct-dns"
+      },
+      {
+        "clash_mode": [
+          "全局代理-RedirHost",
+          "全局代理-FakeIP"
+        ],
+        "server": "global-dns"
+      },
+      {
+        "clash_mode": [
+          "规则模式-我不免流-混合模式",
+          "规则模式-我要免流-混合模式"
+        ],
+        "query_type": [
+          "A",
+          "AAAA"
+        ],
+        "rule_set": [
+          "tiktok-域名",
+          "强制代理-域名",
+          "大陆相关-海外服务-域名",
+          "腾讯-海外服务-域名",
+          "阿里巴巴-海外服务-域名",
+          "字节跳动-海外服务-域名",
+          "哔哩哔哩-海外服务-域名",
+          "AI服务-域名",
+          "IP归属检测-域名"
+        ],
+        "server": "fakedns",
+        "rewrite_ttl": 0,
+        "disable_cache": true
+      },
+      {
+        "clash_mode": [
+          "规则模式-我不免流-RedirHost",
+          "规则模式-我不免流-FakeIP",
+          "规则模式-我不免流-混合模式"
+        ],
+        "rule_set": [
+          "tiktok-域名",
+          "强制代理-域名",
+          "大陆相关-海外服务-域名",
+          "腾讯-海外服务-域名",
+          "阿里巴巴-海外服务-域名",
+          "字节跳动-海外服务-域名",
+          "哔哩哔哩-海外服务-域名",
+          "AI服务-域名",
+          "IP归属检测-域名"
+        ],
+        "server": "proxy-nm"
+      },
+      {
+        "clash_mode": [
+          "规则模式-我要免流-RedirHost",
+          "规则模式-我要免流-FakeIP",
+          "规则模式-我要免流-混合模式"
+        ],
+        "rule_set": [
+          "tiktok-域名",
+          "强制代理-域名",
+          "大陆相关-海外服务-域名",
+          "腾讯-海外服务-域名",
+          "阿里巴巴-海外服务-域名",
+          "字节跳动-海外服务-域名",
+          "哔哩哔哩-海外服务-域名",
+          "AI服务-域名",
+          "IP归属检测-域名"
+        ],
+        "server": "proxy-ml"
+      },
+      {
+        "clash_mode": [
+          "规则模式-我不免流-RedirHost",
+          "规则模式-我不免流-FakeIP",
+          "规则模式-我不免流-混合模式"
+        ],
+        "rule_set": [
+          "推送服务-域名",
+          "强制直连-域名",
+          "字节跳动-域名",
+          "大陆相关-域名",
+          "海外公司-大陆服务-域名",
+          "苹果-域名",
+          "谷歌-大陆服务-域名",
+          "微软-大陆服务-域名",
+          "亚马逊-大陆服务-域名",
+          "海外CDN-大陆服务-域名",
+          "游戏平台-大陆服务-域名",
+          "哔哩哔哩-域名",
+          "哔哩哔哩2-域名"
+        ],
+        "server": "direct-dns"
+      },
+      {
+        "clash_mode": [
+          "规则模式-我要免流-RedirHost",
+          "规则模式-我要免流-FakeIP",
+          "规则模式-我要免流-混合模式"
+        ],
+        "rule_set": [
+          "推送服务-域名",
+          "强制直连-域名",
+          "字节跳动-域名",
+          "大陆相关-域名",
+          "海外公司-大陆服务-域名",
+          "苹果-域名",
+          "谷歌-大陆服务-域名",
+          "微软-大陆服务-域名",
+          "亚马逊-大陆服务-域名",
+          "海外CDN-大陆服务-域名",
+          "游戏平台-大陆服务-域名",
+          "哔哩哔哩-域名",
+          "哔哩哔哩2-域名"
+        ],
+        "server": "domestic-dns"
+      },
+      {
+        "clash_mode": [
+          "规则模式-我不免流-混合模式",
+          "规则模式-我要免流-混合模式"
+        ],
+        "query_type": [
+          "A",
+          "AAAA"
+        ],
+        "rule_set": "海外公司-域名",
+        "server": "fakedns",
+        "rewrite_ttl": 0,
+        "disable_cache": true
+      },
+      {
+        "clash_mode": [
+          "规则模式-我不免流-RedirHost",
+          "规则模式-我不免流-FakeIP",
+          "规则模式-我不免流-混合模式"
+        ],
+        "rule_set": "海外公司-域名",
+        "server": "proxy-nm"
+      },
+      {
+        "clash_mode": [
+          "规则模式-我要免流-RedirHost",
+          "规则模式-我要免流-FakeIP",
+          "规则模式-我要免流-混合模式"
+        ],
+        "rule_set": "海外公司-域名",
+        "server": "proxy-ml"
+      },
+      {
+        "clash_mode": [
+          "规则模式-我不免流-混合模式",
+          "规则模式-我不免流-RedirHost",
+          "规则模式-我不免流-FakeIP"
+        ],
+        "fallback_rules": [
+          {
+            "rule_set": [
+              "推送服务-IP",
+              "大陆相关-IP",
+              "私有网络-IP"
+            ],
+            "server": "direct-dns"
+          },
+          {
+            "clash_mode": "规则模式-我不免流-混合模式",
+            "server": "fakedns",
+            "rewrite_ttl": 0,
+            "disable_cache": true
+          },
+          {
+            "match_all": true,
+            "server": "proxy-nm"
+          }
+        ],
+        "allow_fallthrough": true,
+        "server": "outbound-unknown"
+      },
+      {
+        "clash_mode": [
+          "规则模式-我要免流-混合模式",
+          "规则模式-我要免流-RedirHost",
+          "规则模式-我要免流-FakeIP"
+        ],
+        "fallback_rules": [
+          {
+            "rule_set": [
+              "推送服务-IP",
+              "大陆相关-IP",
+              "私有网络-IP"
+            ],
+            "accept_result": true
+          },
+          {
+            "clash_mode": "规则模式-我要免流-混合模式",
+            "server": "fakedns",
+            "rewrite_ttl": 0,
+            "disable_cache": true
+          },
+          {
+            "match_all": true,
+            "server": "proxy-ml"
+          }
+        ],
+        "allow_fallthrough": true,
+        "server": "domestic-dns"
+      },
+      {
+        "clash_mode": [
+          "规则模式-我不免流-混合模式",
+          "规则模式-我不免流-RedirHost",
+          "规则模式-我不免流-FakeIP"
+        ],
+        "fallback_rules": [
+          {
+            "rule_set": [
+              "推送服务-IP",
+              "大陆相关-IP",
+              "私有网络-IP"
+            ],
+            "accept_result": true
+          },
+          {
+            "clash_mode": "规则模式-我不免流-混合模式",
+            "server": "fakedns",
+            "rewrite_ttl": 0,
+            "disable_cache": true
+          }
+        ],
+        "server": "proxy-nm"
+      },
+      {
+        "clash_mode": [
+          "规则模式-我要免流-混合模式",
+          "规则模式-我要免流-RedirHost",
+          "规则模式-我要免流-FakeIP"
+        ],
+        "fallback_rules": [
+          {
+            "rule_set": [
+              "推送服务-IP",
+              "大陆相关-IP",
+              "私有网络-IP"
+            ],
+            "accept_result": true
+          },
+          {
+            "clash_mode": "规则模式-我要免流-混合模式",
+            "server": "fakedns",
+            "rewrite_ttl": 0,
+            "disable_cache": true
+          }
+        ],
+        "server": "proxy-ml"
+      }
+    ],
+    "lazy_cache": true,
+    "reverse_mapping": true,
+    "mapping_override": true,
+    "independent_cache": true
+  },
+  "inbounds": [
+    {
+      "tag": "mixed",
+      "type": "mixed",
+      "listen": "::",
+      "listen_port": 12306,
+      "sniff": true,
+      "sniff_override_destination": true,
+      "sniff_override_rules": [
+        {
+          "type": "logical",
+          "mode": "and",
+          "rules": [
+            {
+              "domain_keyword": "."
+            },
+            {
+              "rule_set": [
+                "跳过覆写",
+                "路由后台-域名",
+                "私有网络-域名",
+                "推送服务-IP",
+                "推送服务-域名"
+              ],
+              "invert": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "tag": "tun",
+      "type": "tun",
+      "interface_name": "tun1",
+      "address": [
+        "172.18.0.1/16",
+        "fdfe:dcba:9876::1/126"
+      ],
+      "strict_route": true,
+      "auto_route": true,
+      "route_exclude_address": [
+        "169.254.0.0/16",
+        "224.0.0.0/4",
+        "255.255.255.255/32",
+        "fe80::/10",
+        "ff00::/8"
+      ],
+      "stack": "system",
+      "sniff": true,
+      "sniff_override_destination": true,
+      "sniff_override_rules": [
+        {
+          "type": "logical",
+          "mode": "and",
+          "rules": [
+            {
+              "domain_keyword": "."
+            },
+            {
+              "rule_set": [
+                "跳过覆写",
+                "路由后台-域名",
+                "私有网络-域名",
+                "推送服务-IP",
+                "推送服务-域名"
+              ],
+              "invert": true
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "outbounds": [
+    {
+      "tag": "本机直连",
+      "type": "direct"
+    },
+    {
+      "tag": "流量拦截",
+      "type": "block"
+    },
+    {
+      "tag": "域名解析",
+      "type": "dns"
+    },
+    {
+      "tag": "大厂羊毛",
+      "type": "http",
+      "server": "cloudnproxy.n.shifen.com",
+      "server_port": 443,
+      "headers": {
+        "X-T5-Auth": "683556433",
+        "Host": "153.3.236.22:443"
+      }
+    },
+    {
+      "tag": "国外出口",
+      "type": "selector"
+    },
+    {
+      "tag": "国内出口",
+      "type": "selector",
+      "outbounds": "本机直连"
+    },
+    {
+      "tag": "全局代理",
+      "type": "selector",
+      "providers": "all"
+    }
+  ],
+  "route": {
+    "rule_set": [
+      {
+        "tag": "广告拦截",
+        "path": "./RuleProviders/广告拦截.srs",
+        "url": "https://raw.githubusercontent.com/Yuu518/sing-box-rules/rule_set/rule_set_site/category-ads-all.srs",
+        "type": "remote",
+        "format": "binary",
+        "download_detour": "国外出口",
+        "update_interval": "24h"
+      },
+      {
+        "tag": "海外公司-域名",
+        "path": "./RuleProviders/海外公司-域名.srs",
+        "url": "https://raw.githubusercontent.com/lyc8503/sing-box-rules/rule-set-geosite/geosite-geolocation-!cn.srs",
+        "type": "remote",
+        "format": "binary",
+        "download_detour": "国外出口",
+        "update_interval": "24h"
+      },
+      {
+        "tag": "海外公司-大陆服务-域名",
+        "path": "./RuleProviders/海外公司-大陆服务-域名.srs",
+        "url": "https://raw.githubusercontent.com/lyc8503/sing-box-rules/rule-set-geosite/geosite-category-companies@cn.srs",
+        "type": "remote",
+        "format": "binary",
+        "download_detour": "国外出口",
+        "update_interval": "24h"
+      },
+      {
+        "tag": "大陆相关-域名",
+        "path": "./RuleProviders/大陆相关-域名.srs",
+        "url": "https://raw.githubusercontent.com/lyc8503/sing-box-rules/rule-set-geosite/geosite-cn.srs",
+        "type": "remote",
+        "format": "binary",
+        "download_detour": "国外出口",
+        "update_interval": "24h"
+      },
+      {
+        "tag": "大陆相关-海外服务-域名",
+        "path": "./RuleProviders/大陆相关-海外服务-域名.srs",
+        "url": "https://raw.githubusercontent.com/lyc8503/sing-box-rules/rule-set-geosite/geosite-category-companies@!cn.srs",
+        "type": "remote",
+        "format": "binary",
+        "download_detour": "国外出口",
+        "update_interval": "24h"
+      },
+      {
+        "tag": "大陆相关-IP",
+        "path": "./RuleProviders/大陆相关-IP.srs",
+        "url": "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/sing/geo/geoip/cn.srs",
+        "type": "remote",
+        "format": "binary",
+        "download_detour": "国外出口",
+        "update_interval": "24h"
+      },
+      {
+        "tag": "私有网络-域名",
+        "path": "./RuleProviders/私有网络-域名.srs",
+        "url": "https://raw.githubusercontent.com/lyc8503/sing-box-rules/rule-set-geosite/geosite-private.srs",
+        "type": "remote",
+        "format": "binary",
+        "download_detour": "国外出口",
+        "update_interval": "168h"
+      },
+      {
+        "tag": "私有网络-IP",
+        "path": "./RuleProviders/私有网络-IP.srs",
+        "url": "https://raw.githubusercontent.com/lyc8503/sing-box-rules/rule-set-geoip/geoip-private.srs",
+        "type": "remote",
+        "format": "binary",
+        "download_detour": "国外出口",
+        "update_interval": "168h"
+      },
+      {
+        "tag": "NTP-域名",
+        "path": "./RuleProviders/NTP-域名.srs",
+        "url": "https://raw.githubusercontent.com/lyc8503/sing-box-rules/rule-set-geosite/geosite-category-ntp.srs",
+        "type": "remote",
+        "format": "binary",
+        "download_detour": "国外出口",
+        "update_interval": "168h"
+      },
+      {
+        "tag": "tiktok-域名",
+        "path": "./RuleProviders/tiktok-域名.srs",
+        "url": "https://raw.githubusercontent.com/CHIZI-0618/v2ray-rules-dat/release/singbox_rule_set/geosite-tiktok@!cn.srs",
+        "type": "remote",
+        "format": "binary",
+        "download_detour": "国外出口",
+        "update_interval": "24h"
+      },
+      {
+        "tag": "字节跳动-域名",
+        "path": "./RuleProviders/字节跳动-域名.srs",
+        "url": "https://raw.githubusercontent.com/CHIZI-0618/v2ray-rules-dat/release/singbox_rule_set/geosite-bytedance.srs",
+        "type": "remote",
+        "format": "binary",
+        "download_detour": "国外出口",
+        "update_interval": "24h"
+      },
+      {
+        "tag": "字节跳动-海外服务-域名",
+        "path": "./RuleProviders/字节跳动-海外服务-域名.srs",
+        "url": "https://raw.githubusercontent.com/lyc8503/sing-box-rules/rule-set-geosite/geosite-bytedance@!cn.srs",
+        "type": "remote",
+        "format": "binary",
+        "download_detour": "国外出口",
+        "update_interval": "24h"
+      },
+      {
+        "tag": "腾讯-海外服务-域名",
+        "path": "./RuleProviders/腾讯-海外服务-域名.srs",
+        "url": "https://raw.githubusercontent.com/lyc8503/sing-box-rules/rule-set-geosite/geosite-tencent@!cn.srs",
+        "type": "remote",
+        "format": "binary",
+        "download_detour": "国外出口",
+        "update_interval": "24h"
+      },
+      {
+        "tag": "阿里巴巴-海外服务-域名",
+        "path": "./RuleProviders/阿里巴巴-海外服务-域名.srs",
+        "url": "https://raw.githubusercontent.com/lyc8503/sing-box-rules/rule-set-geosite/geosite-alibaba@!cn.srs",
+        "type": "remote",
+        "format": "binary",
+        "download_detour": "国外出口",
+        "update_interval": "24h"
+      },
+      {
+        "tag": "哔哩哔哩-海外服务-域名",
+        "path": "./RuleProviders/哔哩哔哩-海外服务-域名.srs",
+        "url": "https://raw.githubusercontent.com/lyc8503/sing-box-rules/rule-set-geosite/geosite-bilibili@!cn.srs",
+        "type": "remote",
+        "format": "binary",
+        "download_detour": "国外出口",
+        "update_interval": "24h"
+      },
+      {
+        "tag": "苹果-域名",
+        "path": "./RuleProviders/苹果-域名.srs",
+        "url": "https://raw.githubusercontent.com/lyc8503/sing-box-rules/rule-set-geosite/geosite-apple.srs",
+        "type": "remote",
+        "format": "binary",
+        "download_detour": "国外出口",
+        "update_interval": "24h"
+      },
+      {
+        "tag": "谷歌-大陆服务-域名",
+        "path": "./RuleProviders/谷歌-大陆服务-域名.srs",
+        "url": "https://raw.githubusercontent.com/lyc8503/sing-box-rules/rule-set-geosite/geosite-google@cn.srs",
+        "type": "remote",
+        "format": "binary",
+        "download_detour": "国外出口",
+        "update_interval": "24h"
+      },
+      {
+        "tag": "微软-大陆服务-域名",
+        "path": "./RuleProviders/微软-大陆服务-域名.srs",
+        "url": "https://raw.githubusercontent.com/lyc8503/sing-box-rules/rule-set-geosite/geosite-microsoft@cn.srs",
+        "type": "remote",
+        "format": "binary",
+        "download_detour": "国外出口",
+        "update_interval": "24h"
+      },
+      {
+        "tag": "亚马逊-大陆服务-域名",
+        "path": "./RuleProviders/亚马逊-大陆服务-域名.srs",
+        "url": "https://raw.githubusercontent.com/lyc8503/sing-box-rules/rule-set-geosite/geosite-amazon@cn.srs",
+        "type": "remote",
+        "format": "binary",
+        "download_detour": "国外出口",
+        "update_interval": "168h"
+      },
+      {
+        "tag": "海外CDN-大陆服务-域名",
+        "path": "./RuleProviders/海外CDN-大陆服务-域名.srs",
+        "url": "https://raw.githubusercontent.com/lyc8503/sing-box-rules/rule-set-geosite/geosite-category-cdn-!cn@cn.srs",
+        "type": "remote",
+        "format": "binary",
+        "download_detour": "国外出口",
+        "update_interval": "168h"
+      },
+      {
+        "tag": "游戏平台-大陆服务-域名",
+        "path": "./RuleProviders/游戏平台-大陆服务-域名.srs",
+        "url": "https://raw.githubusercontent.com/lyc8503/sing-box-rules/rule-set-geosite/geosite-category-games@cn.srs",
+        "type": "remote",
+        "format": "binary",
+        "download_detour": "国外出口",
+        "update_interval": "168h"
+      },
+      {
+        "tag": "AI服务-域名",
+        "path": "./RuleProviders/AI服务-域名.srs",
+        "url": "https://raw.githubusercontent.com/lyc8503/sing-box-rules/rule-set-geosite/geosite-category-ai-!cn.srs",
+        "type": "remote",
+        "format": "binary",
+        "download_detour": "国外出口",
+        "update_interval": "24h"
+      },
+      {
+        "tag": "IP归属检测-域名",
+        "path": "./RuleProviders/IP归属检测-域名.srs",
+        "url": "https://raw.githubusercontent.com/lyc8503/sing-box-rules/rule-set-geosite/geosite-category-ip-geo-detect.srs",
+        "type": "remote",
+        "format": "binary",
+        "download_detour": "国外出口",
+        "update_interval": "168h"
+      },
+      {
+        "tag": "HTTPDNS-大陆-域名",
+        "path": "./RuleProviders/HTTPDNS-大陆-域名.srs",
+        "url": "https://raw.githubusercontent.com/lyc8503/sing-box-rules/rule-set-geosite/geosite-category-httpdns-cn.srs",
+        "type": "remote",
+        "format": "binary",
+        "download_detour": "国外出口",
+        "update_interval": "168h"
+      },
+      {
+        "tag": "BT跟踪器-域名",
+        "path": "./RuleProviders/BT跟踪器-域名.srs",
+        "url": "https://raw.githubusercontent.com/lyc8503/sing-box-rules/rule-set-geosite/geosite-category-public-tracker.srs",
+        "type": "remote",
+        "format": "binary",
+        "download_detour": "国外出口",
+        "update_interval": "168h"
+      },
+      {
+        "tag": "虎牙-域名",
+        "path": "./RuleProviders/虎牙-域名.srs",
+        "url": "https://raw.githubusercontent.com/CHIZI-0618/v2ray-rules-dat/release/singbox_rule_set/geosite-huya.srs",
+        "type": "remote",
+        "format": "binary",
+        "download_detour": "国外出口",
+        "update_interval": "24h"
+      },
+      {
+        "tag": "斗鱼-域名",
+        "path": "./RuleProviders/斗鱼-域名.srs",
+        "url": "https://raw.githubusercontent.com/CHIZI-0618/v2ray-rules-dat/release/singbox_rule_set/geosite-douyu.srs",
+        "type": "remote",
+        "format": "binary",
+        "download_detour": "国外出口",
+        "update_interval": "24h"
+      },
+      {
+        "tag": "强制代理-域名",
+        "path": "./RuleProviders/强制代理-域名.json",
+        "type": "local",
+        "format": "source"
+      },
+      {
+        "tag": "强制直连-域名",
+        "path": "./RuleProviders/强制直连-域名.json",
+        "type": "local",
+        "format": "source"
+      },
+      {
+        "tag": "推送服务-域名",
+        "path": "./RuleProviders/推送服务-域名.json",
+        "type": "local",
+        "format": "source"
+      },
+      {
+        "tag": "推送服务-IP",
+        "path": "./RuleProviders/推送服务-IP.json",
+        "type": "local",
+        "format": "source"
+      },
+      {
+        "tag": "路由后台-域名",
+        "path": "./RuleProviders/路由后台-域名.json",
+        "type": "local",
+        "format": "source"
+      },
+      {
+        "tag": "跳过覆写",
+        "path": "./RuleProviders/跳过覆写.json",
+        "type": "local",
+        "format": "source"
+      },
+      {
+        "tag": "HTTPDNS-域名",
+        "path": "./RuleProviders/HTTPDNS-域名.srs",
+        "type": "local",
+        "format": "binary"
+      },
+      {
+        "tag": "虎牙-PCDN｜MCDN-域名",
+        "path": "./RuleProviders/虎牙-PCDN｜MCDN-域名.srs",
+        "type": "local",
+        "format": "binary"
+      },
+      {
+        "tag": "哔哩哔哩-PCDN｜MCDN-域名",
+        "path": "./RuleProviders/哔哩哔哩-PCDN｜MCDN-域名.srs",
+        "type": "local",
+        "format": "binary"
+      },
+      {
+        "tag": "哔哩哔哩-域名",
+        "path": "./RuleProviders/哔哩哔哩-域名.srs",
+        "type": "local",
+        "format": "binary"
+      },
+      {
+        "tag": "哔哩哔哩2-域名",
+        "path": "./RuleProviders/哔哩哔哩2-域名.srs",
+        "type": "local",
+        "format": "binary"
+      }
+    ],
+    "rules": [
+      {
+        "type": "logical",
+        "mode": "or",
+        "rules": [
+          {
+            "protocol": "dns"
+          },
+          {
+            "port": 53
+          }
+        ],
+        "outbound": "域名解析"
+      },
+      {
+        "rule_set": "广告拦截",
+        "outbound": "流量拦截"
+      },
+      {
+        "rule_set": [
+          "HTTPDNS-域名",
+          "HTTPDNS-大陆-域名",
+          "虎牙-PCDN｜MCDN-域名",
+          "哔哩哔哩-PCDN｜MCDN-域名"
+        ],
+        "outbound": "流量拦截"
+      },
+      {
+        "protocol": "stun",
+        "rule_set": [
+          "字节跳动-域名",
+          "tiktok-域名",
+          "虎牙-域名",
+          "斗鱼-域名",
+          "哔哩哔哩-域名"
+        ],
+        "outbound": "流量拦截"
+      },
+      {
+        "type": "logical",
+        "mode": "or",
+        "rules": [
+          {
+            "rule_set": "路由后台-域名"
+          },
+          {
+            "rule_set": "私有网络-域名"
+          }
+        ],
+        "outbound": "本机直连"
+      },
+      {
+        "rule_set": "NTP-域名",
+        "outbound": "本机直连"
+      },
+      {
+        "ip_cidr": [
+          "0.0.0.0/8",
+          "10.0.0.0/8",
+          "100.64.0.0/10",
+          "127.0.0.0/8",
+          "169.254.0.0/16",
+          "172.16.0.0/12",
+          "192.168.0.0/16",
+          "224.0.0.0/4",
+          "255.255.255.255/32",
+          "::1/128",
+          "fd00::/8",
+          "fe80::/10",
+          "ff00::/8"
+        ],
+        "outbound": "本机直连"
+      },
+      {
+        "clash_mode": [
+          "全局直连-RedirHost",
+          "全局直连-FakeIP"
+        ],
+        "outbound": "本机直连"
+      },
+      {
+        "clash_mode": [
+          "全局代理-RedirHost",
+          "全局代理-FakeIP"
+        ],
+        "outbound": "全局代理"
+      },
+      {
+        "clash_mode": [
+          "规则模式-我不免流-混合模式",
+          "规则模式-我要免流-混合模式"
+        ],
+        "fake_ip": true,
+        "outbound": "国外出口"
+      },
+      {
+        "rule_set": [
+          "tiktok-域名",
+          "强制代理-域名",
+          "大陆相关-海外服务-域名",
+          "腾讯-海外服务-域名",
+          "阿里巴巴-海外服务-域名",
+          "字节跳动-海外服务-域名",
+          "哔哩哔哩-海外服务-域名",
+          "AI服务-域名",
+          "IP归属检测-域名"
+        ],
+        "outbound": "国外出口"
+      },
+      {
+        "clash_mode": [
+          "规则模式-我不免流-RedirHost",
+          "规则模式-我不免流-FakeIP",
+          "规则模式-我不免流-混合模式"
+        ],
+        "rule_set": [
+          "推送服务-域名",
+          "强制直连-域名",
+          "字节跳动-域名",
+          "大陆相关-域名",
+          "海外公司-大陆服务-域名",
+          "苹果-域名",
+          "谷歌-大陆服务-域名",
+          "微软-大陆服务-域名",
+          "亚马逊-大陆服务-域名",
+          "海外CDN-大陆服务-域名",
+          "游戏平台-大陆服务-域名",
+          "哔哩哔哩-域名",
+          "哔哩哔哩2-域名"
+        ],
+        "outbound": "本机直连"
+      },
+      {
+        "clash_mode": [
+          "规则模式-我要免流-RedirHost",
+          "规则模式-我要免流-FakeIP",
+          "规则模式-我要免流-混合模式"
+        ],
+        "rule_set": [
+          "推送服务-域名",
+          "强制直连-域名",
+          "字节跳动-域名",
+          "大陆相关-域名",
+          "海外公司-大陆服务-域名",
+          "苹果-域名",
+          "谷歌-大陆服务-域名",
+          "微软-大陆服务-域名",
+          "亚马逊-大陆服务-域名",
+          "海外CDN-大陆服务-域名",
+          "游戏平台-大陆服务-域名",
+          "哔哩哔哩-域名",
+          "哔哩哔哩2-域名"
+        ],
+        "outbound": "国内出口"
+      },
+      {
+        "rule_set": "海外公司-域名",
+        "outbound": "国外出口"
+      },
+      {
+        "clash_mode": [
+          "规则模式-我不免流-RedirHost",
+          "规则模式-我不免流-FakeIP",
+          "规则模式-我不免流-混合模式"
+        ],
+        "rule_set": [
+          "推送服务-IP",
+          "大陆相关-IP"
+        ],
+        "outbound": "本机直连"
+      },
+      {
+        "clash_mode": [
+          "规则模式-我要免流-RedirHost",
+          "规则模式-我要免流-FakeIP",
+          "规则模式-我要免流-混合模式"
+        ],
+        "rule_set": [
+          "推送服务-IP",
+          "大陆相关-IP"
+        ],
+        "outbound": "国内出口"
+      }
+    ],
+    "final": "国外出口",
+    "auto_detect_interface": true,
+    "find_process": true,
+    "default_mark": 2333,
+    "concurrent_dial": false
+  },
+  "experimental": {
+    "cache_file": {
+      "enabled": true,
+      "path": "./src/cache.db"
+    },
+    "clash_api": {
+      "external_controller": "127.0.0.1:9909",
+      "external_ui": "Dashboard",
+      "secret": "singBox",
+      "default_mode": "规则模式-我要免流-FakeIP"
+    }
+  }
+}

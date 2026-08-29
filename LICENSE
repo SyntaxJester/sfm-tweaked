@@ -1,0 +1,50 @@
+MIT License
+
+Copyright (c) 2026 SyntaxJester
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+---
+
+SCOPE NOTE / 适用范围说明
+
+This license covers ONLY the files authored by the repository owner:
+
+  - src/baseConfig.yaml            (modifications only; see below)
+  - RuleProviders/*.json
+  - tools/validate_baseconfig.py
+  - README.md, CREDITS.md, docs/*
+
+It does NOT cover, and this repository makes no claim over:
+
+  - The Magisk module "神秘啊神秘" / SingBox_For_Magisk, authored by Puer_Nya
+    (https://github.com/PuerNya). Its binaries (singBox, bundle, converter,
+    handle, keycheck, base.apk), installation scripts, and web dashboard are
+    NOT included in this repository and remain the property of their author.
+
+  - The original structure of src/baseConfig.yaml, which is derived from the
+    configuration template bundled with that module.
+
+  - Any third-party rule-set data referenced by URL in the configuration
+    (see CREDITS.md for the full list of upstream projects).
+
+本许可仅覆盖仓库作者编写的内容。原模块 SingBox_For_Magisk（作者 Puer_Nya）
+的版权归原作者所有，本仓库不包含其任何二进制或脚本，亦无权代为授权。
+src/baseConfig.yaml 的整体结构派生自原模块自带的配置模板。
+详见 CREDITS.md。

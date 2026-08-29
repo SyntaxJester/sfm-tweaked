@@ -1,0 +1,43 @@
+{
+  "version": 1,
+  "rules": [
+    {
+      "domain": [
+        "Mijia Cloud",
+        "dlg.io.mi.com"
+      ],
+      "domain_suffix": [
+        ".ess.apple.com",
+        ".i.tplinknbu.com",
+        "wap-gw.tplinkcloud.com",
+        "stun.tplinkcloud.com",
+        ".feishu.cn",
+        ".dingtalk.com",
+        ".alipay.com",
+        ".alipayobjects.com",
+        ".wechat.com",
+        ".weixin.qq.com",
+        ".qpic.cn",
+        ".gtimg.cn",
+        ".mi.com",
+        ".xiaomi.com",
+        ".miui.com",
+        ".aiot-cloud.com",
+        ".broadlink.com.cn",
+        ".ipc.aqara.cn",
+        ".tuyacn.com",
+        ".tuyaus.com",
+        ".yeelight.com",
+        ".ecovacs.com",
+        ".roborock.com",
+        ".sonos.com",
+        ".spotify.com",
+        ".steamcontent.com",
+        ".epicgames.com",
+        ".nintendo.net",
+        ".playstation.net",
+        ".xboxlive.com"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+# 编辑器 / 系统垃圾
+.DS_Store
+Thumbs.db
+*.swp
+*~
+
+# Python
+__pycache__/
+*.py[cod]
+
+# 原模块产物（不应提交到本仓库）
+box.json
+cache.db
+*.srs
+src/log/
+ProxyProviders/
+
+# 本地备份
+*.bak
+*.orig

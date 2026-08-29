@@ -1,0 +1,81 @@
+name: 校验配置
+
+on:
+  push:
+    paths:
+      - 'src/baseConfig.yaml'
+      - 'RuleProviders/**'
+      - 'tools/**'
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: 安装依赖
+        run: pip install pyyaml==6.0.2
+
+      - name: 校验 baseConfig.yaml
+        run: python3 tools/validate_baseconfig.py src/baseConfig.yaml tools/kernel_fields.txt
+
+      - name: 校验本地规则集 JSON
+        run: |
+          python3 - <<'PY'
+          import json, pathlib, sys
+          bad = 0
+          for p in sorted(pathlib.Path('RuleProviders').glob('*.json')):
+              try:
+                  d = json.loads(p.read_text(encoding='utf-8'))
+                  assert d.get('version') == 1, 'version 必须为 1'
+                  assert isinstance(d.get('rules'), list) and d['rules'], 'rules 不能为空'
+                  n = sum(len(v) if isinstance(v, list) else 1
+                          for r in d['rules'] for v in r.values())
+                  print(f'  OK  {p.name}  ({n} 条目)')
+              except Exception as e:
+                  print(f'  ERR {p.name}: {e}')
+                  bad += 1
+          sys.exit(1 if bad else 0)
+          PY
+
+      - name: 探测远程规则源可用性
+        continue-on-error: true
+        run: |
+          python3 - <<'PY'
+          import yaml, urllib.request, ssl, sys
+          ctx = ssl.create_default_context()
+          cfg = yaml.safe_load(open('src/baseConfig.yaml'))
+          bad = []
+          for r in cfg['route']['rule_set']:
+              if r.get('type') != 'remote':
+                  continue
+              url = r['url']
+              code = 0
+              for _ in range(3):
+                  try:
+                      req = urllib.request.Request(url, headers={'User-Agent': 'curl/8'})
+                      resp = urllib.request.urlopen(req, timeout=30, context=ctx)
+                      data = resp.read()
+                      code = resp.status
+                      ver = data[3] if data[:3] == b'SRS' else '?'
+                      print(f'  OK  SRSv{ver} {len(data):>8}B  {r["tag"]}')
+                      break
+                  except urllib.error.HTTPError as e:
+                      code = e.code
+                      break
+                  except Exception:
+                      pass
+              if code != 200:
+                  print(f'  BAD http={code}  {r["tag"]}  {url}')
+                  bad.append(r['tag'])
+          if bad:
+              print()
+              print('失效的规则源:', bad)
+              sys.exit(1)
+          PY
