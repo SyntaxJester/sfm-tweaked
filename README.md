@@ -219,10 +219,23 @@ cp RuleProviders/*.json /data/adb/sfm/RuleProviders/
 
 # 内核自校验（这一步会真的解析 box.json）
 /data/adb/sfm/singBox check -D /data/adb/sfm -c box.json
-
-# 重启（或直接重启设备）
-sh /data/adb/service.d/../sfm_service.sh 2>/dev/null || reboot
 ```
+
+最省事的重启方式是直接 `reboot`。想不重启就手动拉起面板（照抄模块 `service.sh` 的启动方式，
+node 来自 termux，环境变量必须带）：
+
+```bash
+export PATH=/data/data/com.termux/files/usr/bin:/data/data/com.termux/files/usr/bin/applets:$PATH
+export LD_LIBRARY_PATH=/data/data/com.termux/files/usr/lib
+nohup node /data/adb/sfm/bundle --enable-source-maps \
+  >/dev/null 2>/data/adb/sfm/src/log/run.log &
+
+# 确认起来了
+pidof node && pidof singBox
+```
+
+起不来就看 `/data/adb/sfm/src/log/run.log`（面板日志）和
+`/data/adb/sfm/src/log/box.log`（内核日志）。
 
 `RuleProviders/` 里的 5 个 `.srs`（`HTTPDNS-域名`、`虎牙-PCDN｜MCDN-域名`、
 `哔哩哔哩-域名`、`哔哩哔哩2-域名`、`哔哩哔哩-PCDN｜MCDN-域名`）是**原模块自带的**，

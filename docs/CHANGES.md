@@ -291,9 +291,11 @@ cp RuleProviders/*.json /data/adb/sfm/RuleProviders/
 # 内核自校验（这一步会真的解析 box.json）
 /data/adb/sfm/singBox check -D /data/adb/sfm -c box.json
 
-# 重启模块服务
-pkill -f 'node /data/adb/sfm/bundle'
-sh /data/adb/sfm/../service.sh   # 或直接重启设备
+# 重启面板：最省事是 reboot；不想重启就手动拉起（node 来自 termux，环境变量必须带）
+export PATH=/data/data/com.termux/files/usr/bin:/data/data/com.termux/files/usr/bin/applets:$PATH
+export LD_LIBRARY_PATH=/data/data/com.termux/files/usr/lib
+nohup node /data/adb/sfm/bundle --enable-source-maps >/dev/null 2>/data/adb/sfm/src/log/run.log &
+pidof node && pidof singBox
 ```
 
 注意：`baseConfig.yaml` 是面板的**工作缓存**，面板每次改配置都会
