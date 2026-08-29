@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "rules": [
+    {
+      "domain_suffix": [
+        ".xn--ngstr-lra8j.com",
+        ".googleapis.cn",
+        ".dev",
+        ".openai.com",
+        ".chatgpt.com",
+        ".oaistatic.com",
+        ".oaiusercontent.com",
+        ".anthropic.com",
+        ".claude.ai",
+        ".gemini.google.com",
+        ".githubusercontent.com",
+        ".githubassets.com",
+        ".ghcr.io",
+        ".docker.io",
+        ".docker.com",
+        ".npmjs.org",
+        ".pypi.org",
+        ".pythonhosted.org",
+        ".crates.io",
+        ".rubygems.org",
+        ".maven.org",
+        ".gradle.org",
+        ".jetbrains.com",
+        ".vscode.dev",
+        ".vscode-cdn.net",
+        ".stackoverflow.com",
+        ".wikipedia.org",
+        ".wikimedia.org",
+        ".v2ex.com",
+        ".telegram.org",
+        ".t.me"
+      ]
+    }
+  ]
+}

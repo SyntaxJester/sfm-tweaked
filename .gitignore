@@ -8,13 +8,24 @@ Thumbs.db
 __pycache__/
 *.py[cod]
 
-# 原模块产物（不应提交到本仓库）
+# 运行时产物（不应提交）
 box.json
-cache.db
-*.srs
-src/log/
-ProxyProviders/
+src/cache.db
+sfm/src/cache.db
+sfm/src/log/
+sfm/src/appLabels.json
+sfm/src/modulePath
+sfm/src/geoip.db*
+sfm/src/geosite.db*
+sfm/src/sharedBaseConfig.yaml
+sfm/ProxyProviders/*.json
+start
+install
 
 # 本地备份
 *.bak
 *.orig
+
+# 打包产物
+*.zip
+!*.srs

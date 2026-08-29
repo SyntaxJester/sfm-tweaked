@@ -20,31 +20,51 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
----
-
+================================================================================
 SCOPE NOTE / 适用范围说明
+================================================================================
 
 This license covers ONLY the files authored by the repository owner:
 
-  - src/baseConfig.yaml            (modifications only; see below)
-  - RuleProviders/*.json
+  - sfm/src/baseConfig.yaml          (modifications only; original template
+                                      structure belongs to the module author)
+  - sfm/RuleProviders/强制代理-域名.json
+  - sfm/RuleProviders/强制直连-域名.json
+  - sfm/RuleProviders/推送服务-域名.json
+  - sfm/RuleProviders/跳过覆写.json
+  - sfm/RuleProviders/路由后台-域名.json
   - tools/validate_baseconfig.py
-  - README.md, CREDITS.md, docs/*
+  - README.md, CREDITS.md, docs/*, .github/*
 
-It does NOT cover, and this repository makes no claim over:
+It does NOT cover, and this repository makes NO claim over, the original
+Magisk module "神秘啊神秘" / SingBox_For_Magisk, authored by Puer_Nya
+(https://github.com/PuerNya). That includes, but is not limited to:
 
-  - The Magisk module "神秘啊神秘" / SingBox_For_Magisk, authored by Puer_Nya
-    (https://github.com/PuerNya). Its binaries (singBox, bundle, converter,
-    handle, keycheck, base.apk), installation scripts, and web dashboard are
-    NOT included in this repository and remain the property of their author.
+  - sfm/singBox        custom sing-box kernel (PuerNya fork)
+  - sfm/bundle         Node.js dashboard / config service
+  - sfm/converter      config migration tool
+  - handle, keycheck   helper binaries
+  - base.apk           bundled companion app
+  - customize.sh, service.sh, post-fs-data.sh, uninstall.sh
+  - module.prop, webroot/, META-INF/
+  - sfm/Dashboard/, sfm/src/maho/
+  - sfm/src/config.yaml, sfm/src/FileProviders/*
+  - sfm/RuleProviders/*.srs
 
-  - The original structure of src/baseConfig.yaml, which is derived from the
-    configuration template bundled with that module.
+Those files are redistributed here VERBATIM (byte-identical to the original,
+verifiable by sha256) solely so that this modified configuration can be
+flashed and used directly. All rights remain with their original author.
 
-  - Any third-party rule-set data referenced by URL in the configuration
-    (see CREDITS.md for the full list of upstream projects).
+Third-party rule-set data referenced by URL in the configuration belongs to
+their respective projects; see CREDITS.md for the full list.
+
+--------------------------------------------------------------------------------
 
 本许可仅覆盖仓库作者编写的内容。原模块 SingBox_For_Magisk（作者 Puer_Nya）
-的版权归原作者所有，本仓库不包含其任何二进制或脚本，亦无权代为授权。
-src/baseConfig.yaml 的整体结构派生自原模块自带的配置模板。
-详见 CREDITS.md。
+的版权归原作者所有 —— 包括 singBox / bundle / converter / handle / keycheck /
+base.apk / 全部安装脚本 / 面板前端 / 16 个 .srs 规则集。
+
+这些文件在本仓库中原样收录（与原版逐字节一致，可用 sha256 验证），
+仅为使二改配置可直接刷入使用，本仓库不主张任何权利，亦无权代为授权。
+
+若原作者对此有异议，请开 issue 告知，将立即删除。详见 CREDITS.md。

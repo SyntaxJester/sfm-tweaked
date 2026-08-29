@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "rules": [
+    {
+      "domain_suffix": [
+        ".push.apple.com",
+        ".push-apple.com.akadns.net",
+        ".courier.push.apple.com",
+        ".mtalk.google.com",
+        ".gcm.googleapis.com",
+        ".fcm.googleapis.com",
+        ".firebaseinstallations.googleapis.com",
+        ".push.hicloud.com",
+        ".push.hicloud.com.cn",
+        ".hwcloudtest.cn",
+        ".jpush.cn",
+        ".jiguang.cn",
+        ".getui.com",
+        ".igexin.com",
+        ".umeng.com",
+        ".umengcloud.com",
+        ".xmpush.xiaomi.com",
+        ".mipush.xiaomi.com",
+        ".resolver.xiaomi.com",
+        ".push.oppomobile.com",
+        ".push.vivo.com.cn",
+        ".pushmsg.vivo.com.cn",
+        ".meizu.com",
+        ".tpns.tencent.com",
+        ".tpstelemetry.tencent.com"
+      ],
+      "domain_regex": [
+        "^(alt[1-8]-)?mtalk4?(-(staging|dev))?\\.google\\.com$",
+        "^[0-9]+-courier(-[0-9]+)?\\.push\\.apple\\.com$"
+      ]
+    }
+  ]
+}

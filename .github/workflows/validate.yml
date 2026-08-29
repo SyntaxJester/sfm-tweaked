@@ -3,9 +3,10 @@ name: 校验配置
 on:
   push:
     paths:
-      - 'src/baseConfig.yaml'
-      - 'RuleProviders/**'
+      - 'sfm/src/baseConfig.yaml'
+      - 'sfm/RuleProviders/**'
       - 'tools/**'
+      - 'UPSTREAM_SHA256.txt'
   pull_request:
   workflow_dispatch:
 
@@ -23,14 +24,18 @@ jobs:
         run: pip install pyyaml==6.0.2
 
       - name: 校验 baseConfig.yaml
-        run: python3 tools/validate_baseconfig.py src/baseConfig.yaml tools/kernel_fields.txt
+        run: python3 tools/validate_baseconfig.py sfm/src/baseConfig.yaml tools/kernel_fields.txt
+
+      - name: 核对原作者文件未被改动
+        run: |
+          sha256sum -c UPSTREAM_SHA256.txt
 
       - name: 校验本地规则集 JSON
         run: |
           python3 - <<'PY'
           import json, pathlib, sys
           bad = 0
-          for p in sorted(pathlib.Path('RuleProviders').glob('*.json')):
+          for p in sorted(pathlib.Path('sfm/RuleProviders').glob('*.json')):
               try:
                   d = json.loads(p.read_text(encoding='utf-8'))
                   assert d.get('version') == 1, 'version 必须为 1'
@@ -45,18 +50,16 @@ jobs:
           PY
 
       - name: 探测远程规则源可用性
-        continue-on-error: true
         run: |
           python3 - <<'PY'
           import yaml, urllib.request, ssl, sys
           ctx = ssl.create_default_context()
-          cfg = yaml.safe_load(open('src/baseConfig.yaml'))
+          cfg = yaml.safe_load(open('sfm/src/baseConfig.yaml'))
           bad = []
           for r in cfg['route']['rule_set']:
               if r.get('type') != 'remote':
                   continue
-              url = r['url']
-              code = 0
+              url, code = r['url'], 0
               for _ in range(3):
                   try:
                       req = urllib.request.Request(url, headers={'User-Agent': 'curl/8'})

@@ -1,0 +1,62 @@
+addons: &addons
+  type: http
+  port: 443
+  headers:
+    # 百度直连
+    X-T5-Auth: 683556433
+    Host: 153.3.236.22:443
+    # 钉钉直连需要取消以下注释
+    # With-At: gw.alicdn.com
+# 节点
+proxies:
+  - name: 公共域名
+    server: cloudnproxy.n.shifen.com
+    <<: *addons
+  - name: 北京中联
+    server: 220.181.33.174
+    <<: *addons
+  - name: 广州联通
+    server: 157.255.78.51
+    <<: *addons
+  - name: 广州电信
+    server: 14.215.179.244
+    <<: *addons
+  - name: 广州中联
+    server: 220.181.111.189
+    <<: *addons
+  - name: 重庆移动
+    server: 36.152.45.97
+    <<: *addons
+  - name: 重庆中联
+    server: 36.152.45.98
+    <<: *addons
+  - name: 南京联通
+    server: 153.3.236.22
+    <<: *addons
+  - name: 南京电信
+    server: 180.101.50.249
+    <<: *addons
+  - name: 昆山联通
+    server: 157.0.148.53
+    <<: *addons
+  - name: 郑州联通1
+    server: 110.242.70.68
+    <<: *addons
+  - name: 郑州联通2
+    server: 110.242.70.69
+    <<: *addons
+  - name: 郑州联通3
+    server: 157.255.72.18
+    <<: *addons
+  - name: 郑州联通4
+    server: 157.255.78.51
+    <<: *addons
+  - name: 郑州电信1
+    server: 180.97.93.202
+    <<: *addons
+  - name: 郑州电信2
+    server: 180.101.50.208
+    <<: *addons
+  - name: 郑州中联
+    server: 220.181.7.1
+    <<: *addons

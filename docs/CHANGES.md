@@ -231,7 +231,7 @@ FakeIP 和全部 DNS 分流整体失效。局域网单播流量由 route 侧的�
 比 `singBox check` 的优势是不需要 root、不需要真机、能在写配置的当场跑。
 
 ```
-python3 tools/validate_baseconfig.py src/baseConfig.yaml tools/kernel_fields.txt
+python3 tools/validate_baseconfig.py sfm/src/baseConfig.yaml tools/kernel_fields.txt
 ```
 
 检查项：
@@ -248,7 +248,7 @@ python3 tools/validate_baseconfig.py src/baseConfig.yaml tools/kernel_fields.txt
 结果：
 
 ```
-=== 校验 src/baseConfig.yaml
+=== 校验 sfm/src/baseConfig.yaml
 rule_set: 38 个, route.rules: 22 条, dns.rules: 22 条, inbounds: 3, outbounds: 7
 ✅ 无阻断性错误
 ```
@@ -278,15 +278,23 @@ experimental / experimental.clash_api / experimental.v2ray_api(.stats)
 
 ## 四、部署
 
+本仓库已经是「配置改好的完整模块」，直接刷 zip 最省事（见 README）。
+下面是只覆盖配置的做法，适合已经装了原版、不想重刷模块的情况：
+
 ```bash
 su
+
+# 必须先停面板 —— baseConfig.yaml 是它的工作缓存，
+# 面板每次保存配置都会 writeFileSync + rename 覆盖它
+pkill -f 'node /data/adb/sfm/bundle'
+
 # 备份
 cp /data/adb/sfm/src/baseConfig.yaml /data/adb/sfm/src/baseConfig.yaml.bak
 cp -r /data/adb/sfm/RuleProviders /data/adb/sfm/RuleProviders.bak
 
 # 覆盖
-cp src/baseConfig.yaml /data/adb/sfm/src/
-cp RuleProviders/*.json /data/adb/sfm/RuleProviders/
+cp sfm/src/baseConfig.yaml /data/adb/sfm/src/
+cp sfm/RuleProviders/*.json /data/adb/sfm/RuleProviders/
 
 # 内核自校验（这一步会真的解析 box.json）
 /data/adb/sfm/singBox check -D /data/adb/sfm -c box.json
@@ -298,11 +306,25 @@ nohup node /data/adb/sfm/bundle --enable-source-maps >/dev/null 2>/data/adb/sfm/
 pidof node && pidof singBox
 ```
 
+### 覆盖刷入 zip 时的坑
+
+原版 `customize.sh` 检测到 `/data/adb/sfm` 已存在时会走「增量更新」分支，
+其中这两行会**把现有配置还原回去**：
+
+```sh
+cp -rf ${DATADIR}.old/${TIMESTAMP}/RuleProviders/*.json ${DATADIR}/RuleProviders/
+cp -f  ${DATADIR}.old/${TIMESTAMP}/src/baseConfig.yaml  ${DATADIR}/src/baseConfig.yaml
+```
+
+这是原作者的设计（保护用户配置不被模块更新覆盖），本仓库没有改动它。
+所以在已装原版的机器上刷本 zip，配置还是旧的 —— 需要之后再手动覆盖一次（上面的方式），
+或者先卸载原模块再全新刷入。
+
 注意：`baseConfig.yaml` 是面板的**工作缓存**，面板每次改配置都会
 `writeFileSync(baseConfig.yaml.new)` 然后 rename 覆盖。所以要在模块服务停止时替换，
 否则会被面板写回的内容盖掉。
 
-首次启动会下载 26 个远程规则集（合计约 3MB），走 `download_detour: 国外出口` —— 
+首次启动会下载 27 个远程规则集（合计约 3MB），走 `download_detour: 国外出口` —— 
 必须先有一个能用的国外节点，否则 `initial rule-set` 失败、内核起不来。
 如果节点还没配好，临时把这些 `rule_set` 的 `type` 改成 `local` 跑起来再说。
 
@@ -310,9 +332,11 @@ pidof node && pidof singBox
 
 ```bash
 su
+pkill -f 'node /data/adb/sfm/bundle'
 cp /data/adb/sfm/src/baseConfig.yaml.bak /data/adb/sfm/src/baseConfig.yaml
 rm -rf /data/adb/sfm/RuleProviders && mv /data/adb/sfm/RuleProviders.bak /data/adb/sfm/RuleProviders
 rm -f /data/adb/sfm/src/cache.db   # 清掉规则集缓存，避免新旧混用
+reboot
 ```
 
 ---

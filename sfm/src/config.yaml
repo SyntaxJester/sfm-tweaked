@@ -1,0 +1,12 @@
+apMode:
+  enabled: false
+  compatibilityMode: true
+startWithSingBox: true
+bindHost: 127.0.0.1
+authorizationKey: node
+autoDownSub: true
+autoDownGeo:
+  enabled: false
+  lastDownTime: 0
+ipv6: true
+immediateProtect: false
