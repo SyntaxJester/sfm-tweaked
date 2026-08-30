@@ -19,7 +19,7 @@ Magisk / KernelSU / APatch 模块 **神秘啊神秘（SingBox_For_Magisk）** �
 | 原模块 | 神秘啊神秘 / `SingBox_For_Magisk` |
 | **原作者** | **Puer_Nya** — GitHub [@PuerNya](https://github.com/PuerNya) |
 | 基于原版 | `version=202408160739` / `versionCode=8` |
-| 本版本 | `version=202608292125` / `versionCode=9` |
+| 本版本 | `version=202608310745` / `versionCode=10` |
 | 内核 | [PuerNya/sing-box](https://github.com/PuerNya/sing-box) fork，基线 `1.10.0-alpha.29-067c81a7` |
 
 **模块的全部功能实现都是原作者的作品** —— 定制 sing-box 内核、Node.js 面板、
@@ -52,6 +52,9 @@ Magisk / KernelSU / APatch 模块 **神秘啊神秘（SingBox_For_Magisk）** �
 | `module.prop` | `version` / `versionCode` / 署名，见下 |
 | `tools/`、`docs/` | **新增**，校验器与文档（不参与刷入） |
 
+`sfm/src/baseConfig.yaml` 的主要变化：规则集 18 → 38、
+新增 `国内UDP出口` 出站与 TCP/UDP 分离规则、订正保留地址与 tun 路由排除，详见下文。
+
 未改动的包括：`sfm/singBox`、`sfm/bundle`、`sfm/converter`、`handle`、`keycheck`、
 `base.apk`、`customize.sh`、`service.sh`、`post-fs-data.sh`、`uninstall.sh`、
 `webroot/`、`sfm/Dashboard/`、`sfm/src/maho/`、`sfm/src/config.yaml`、
@@ -65,8 +68,8 @@ Magisk / KernelSU / APatch 模块 **神秘啊神秘（SingBox_For_Magisk）** �
 -versionCode=8
 -author=Puer_Nya
 +name=神秘啊神秘（二改版）
-+version=202608292125
-+versionCode=9
++version=202608310745
++versionCode=10
 +author=Puer_Nya（二改：SyntaxJester）
 ```
 
@@ -93,6 +96,61 @@ sha256sum -c UPSTREAM_SHA256.txt
 ---
 
 ## 改了什么，为什么
+
+### 0. 免流时 UDP 被内核直接关掉 —— 而且白跑流量
+
+免流节点几乎都是 `type: http`，而这个内核里 http 出站只支持 TCP：
+
+```go
+// outbound/http.go:38
+network: []string{N.NetworkTCP}
+// outbound/http.go:65
+func (h *HTTP) ListenPacket(...) { return nil, os.ErrInvalid }
+```
+
+UDP 命中它会走到：
+
+```go
+// route/router.go:1272
+if !common.Contains(detour.Network(), N.NetworkUDP) {
+    return E.New("missing supported outbound, closing packet connection")
+}
+```
+
+**直接关连接，没有任何回退。** 原配置（包括本仓库之前的版本）里 `route.rules`
+一条都没区分 TCP / UDP，国内流量不分协议全送 `国内出口` ——
+一旦那里挂了免流节点，后果是：
+
+- 微信 / QQ 语音视频通话连不上
+- 手游 UDP 长连接断
+- 网页 QUIC（HTTP/3）失败后才回落 TCP，表现为"转圈半天"
+- **客户端重试的 TCP 流量按普通计费走掉** —— 想省的流量反而漏了
+
+改法是把国内规则拆成成对的两条：
+
+```yaml
+- network: tcp          # TCP 走免流出站
+  clash_mode: [规则模式-我要免流-…]
+  rule_set: [推送服务-域名, 强制直连-域名, 大陆相关-域名, …]
+  outbound: 国内出口
+
+- clash_mode: [规则模式-我要免流-…]   # 不带 network，承接漏下来的 UDP
+  rule_set: [推送服务-域名, 强制直连-域名, 大陆相关-域名, …]
+  outbound: 国内UDP出口
+```
+
+新增的 `国内UDP出口` selector 默认兜底 `本机直连` —— 不免流但保证可用。
+有支持 UDP 的国内节点（vmess / hysteria2 / tuic 等）就在面板里挂到它上面。
+**别给它挂 http 类免流节点**，那样 UDP 一样会被关。
+
+域名规则和 IP 规则各一对，共 4 条。`国内出口` / `国内UDP出口` 都加了
+`interrupt_exist_connections: true`，切节点时断开旧连接，避免旧连接挂在失效节点上。
+
+这个思路来自社区里另一份二改（「儒雅二改」v202505252012），
+它用 `network: tcp` + 独立 UDP 出站解决同一问题。本仓库只移植了这个设计，
+没有采用它的内核（那是 1.9 基线，比本仓库的 1.10 更旧，
+会失去 `route_exclude_address` / `auto_redirect`），
+也没有引入它内置的 100MB `node` 二进制或任何订阅内容。
 
 ### 1. 五个规则源已经 404 —— 这是最要紧的一条
 
@@ -185,8 +243,9 @@ HTTPDNS 不拦干净，App 会绕过所有 DNS 规则直接拿真实 IP，分流
 | | 原版 | 本仓库 |
 |---|---|---|
 | `route.rule_set` | 18 | **38**（27 remote + 11 local） |
-| `route.rules` | 19 | **22**（16 启用 + 6 个 `enabled: false` 开关位） |
+| `route.rules` | 19 | **24**（18 启用 + 6 个 `enabled: false` 开关位） |
 | `dns.rules` | 19 | **22** |
+| `outbounds` | 7 | **8**（新增 `国内UDP出口`） |
 | 本地规则集条目 | 30 | **170** |
 
 新增的 20 个规则集：私有网络（域名+IP）、路由后台、NTP、HTTPDNS 扩展、
@@ -208,11 +267,17 @@ HTTPDNS 不拦干净，App 会绕过所有 DNS 规则直接拿真实 IP，分流
 | `ip_version: 6` 拦截 | v6 环境有问题时 |
 | `protocol: quic` 拦截 | 全局拦 QUIC |
 | `protocol: dtls` 拦截 | 原版就有 |
-| **国内 QUIC 拦截** | **国内出口选了「大厂羊毛」这类 http 节点时** |
+| 国内 QUIC 拦截 | 见下 |
 
-最后那个值得说一下：`大厂羊毛` 是 `type: http` 出站，**只承载 TCP**。
-选它做国内出口时所有 UDP/QUIC 直接黑洞，表现为 B 站、微博一直转圈。
-打开这条把国内 QUIC 拦掉，客户端会自动回落 TCP。
+关于最后那条「国内 QUIC 拦截」：它和上面第 0 节的 TCP/UDP 分离是**两种思路**，
+解决同一个问题（http 免流出站不承载 UDP）。
+
+- **TCP/UDP 分离**（本仓库默认启用）：UDP 分流到独立出口，通话和手游正常
+- **国内 QUIC 拦截**（默认关闭）：直接拦掉国内 QUIC，逼客户端回落 TCP 走免流
+
+如果你的 UDP 出口只能挂直连（不免流），那么开启 QUIC 拦截可以让
+本来会走 UDP 的网页流量回落到 TCP 从而享受免流 —— 代价是拦截期间那些请求会先失败一次。
+两个都开也没冲突：QUIC 被拦，其余 UDP（微信语音等）走 UDP 出口。
 
 ---
 

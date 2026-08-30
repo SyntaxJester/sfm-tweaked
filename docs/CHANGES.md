@@ -1,7 +1,7 @@
 # sfm 规则提供者 / 路由 / 入站 完善说明
 
 针对 `SingBox_For_Magisk`（`神秘啊神秘`）原版 v202408160739 的配置层改造，
-本版本 `version=202608292125` / `versionCode=9`。
+本版本 `version=202608310745` / `versionCode=10`。
 只改配置与规则文件，`bundle` / `converter` / `singBox` 三个二进制不动。
 
 > 原模块作者：**Puer_Nya**（[@PuerNya](https://github.com/PuerNya)）。
@@ -19,6 +19,54 @@
 ---
 
 ## 一、原配置里的实际问题
+
+### 0. 免流时 UDP 被内核直接关掉，且白跑流量
+
+免流节点几乎都是 `type: http`。这个内核里 http 出站只声明了 TCP：
+
+```go
+// outbound/http.go:38
+network: []string{N.NetworkTCP}
+// outbound/http.go:65
+func (h *HTTP) ListenPacket(ctx, destination) (net.PacketConn, error) {
+    return nil, os.ErrInvalid
+}
+```
+
+UDP 命中它的时候：
+
+```go
+// route/router.go:1272
+if !common.Contains(detour.Network(), N.NetworkUDP) {
+    return E.New("missing supported outbound, closing packet connection")
+}
+```
+
+**直接关连接，没有任何回退机制。**
+
+原配置（以及本仓库 202608292125 之前的版本）里 `route.rules` 一条都没区分
+TCP / UDP —— 国内流量不分协议全送 `国内出口`。一旦那里挂了 http 免流节点：
+
+| 受影响 | 表现 |
+|---|---|
+| 微信 / QQ 语音视频 | 连不上、一直呼叫中 |
+| 手游 UDP 长连接 | 掉线、460 延迟 |
+| 网页 QUIC（HTTP/3） | 失败后才回落 TCP，"转圈半天" |
+| DNS over QUIC | 解析失败 |
+
+**最反直觉的一点**：UDP 被关后客户端普遍会重试 TCP，
+而这些重试连接**不再经过原来那条免流规则**（已经过了那一跳），
+按普通计费走掉 —— 想省的流量反而漏了。
+
+用脚本核对过改动前的状态：
+
+```
+启用的 route.rules   16 条
+带 network 限定       0 条        ← 问题所在
+送进 selector 的规则   6 条，全部 TCP+UDP 混走
+```
+
+改法见下文「三、改了什么 / 入站与出站」。
 
 ### 1. 三个规则源已经 404，`广告拦截` 之外的 geosite 全线拉不动
 
@@ -224,6 +272,62 @@ FakeIP 和全部 DNS 分流整体失效。局域网单播流量由 route 侧的�
 （文档明确写 "Conflict with route.default_mark"），本模块又依赖 default_mark 做 tproxy 兼容，
 所以用不了。
 
+### 出站：新增 `国内UDP出口` 与 TCP/UDP 分离
+
+针对上文「一、0」那个问题。新增一个出站：
+
+```yaml
+- tag: 国内UDP出口
+  type: selector
+  interrupt_exist_connections: true
+  outbounds: 本机直连          # 兜底，不免流但保证可用
+```
+
+然后把免流模式下的国内规则各拆成一对（域名集一对、IP 集一对，共 4 条）：
+
+```yaml
+# TCP → 免流出站
+- network: tcp
+  clash_mode: [规则模式-我要免流-RedirHost, …-FakeIP, …-混合模式]
+  rule_set: [推送服务-域名, 强制直连-域名, 大陆相关-域名, …]
+  outbound: 国内出口
+
+# 不带 network，承接漏下来的 UDP
+- clash_mode: [规则模式-我要免流-RedirHost, …-FakeIP, …-混合模式]
+  rule_set: [推送服务-域名, 强制直连-域名, 大陆相关-域名, …]
+  outbound: 国内UDP出口
+```
+
+顺序很关键：`network: tcp` 那条必须在前。sing-box 按顺序首次匹配，
+TCP 命中第一条就不再往下走；UDP 因为 `network` 不匹配而跳过第一条，落到第二条。
+
+几个实现细节：
+
+- **只改「我要免流」分支**。「我不免流」本来就是 `本机直连`（`type: direct`，
+  TCP+UDP 都支持），没有这个问题，不需要拆
+- **`国内UDP出口` 默认兜底 `本机直连`**，不是留空。`outbound/selector.go:148`
+  的行为是 provider 全空时退化到 `OUTBOUNDLESS`，而
+  `OUTBOUNDLESS` 在二进制里的实际类型是 `outbound/direct[OUTBOUNDLESS]`（直连）。
+  虽然结果一样，但显式写出来用户在面板里能看见、能理解
+- **加了 `interrupt_exist_connections: true`**（`国内出口` / `国内UDP出口` 两个）。
+  切节点时断开旧连接，避免旧连接还挂在已失效的节点上。
+  这个字段两个 fork 内核都支持，`bundle` 的 `lm()` 也不会剥离它
+- **没给 `国外出口` / `全局代理` 加这个字段** —— 它们的候选完全由用户在面板里挂，
+  保持原样更少意外
+
+验证（脚本模拟按序匹配，代入典型场景）：
+
+```
+场景                     规则  出站          结果
+微信 收发消息              18   国内出口       OK（TCP 免流）
+微信 语音通话(UDP)         19   国内UDP出口    OK（兜底直连）
+B站 看视频(TCP)           18   国内出口       OK
+B站 看视频(QUIC/UDP)      19   国内UDP出口    OK
+手游 长连接(UDP)           19   国内UDP出口    OK
+国内站 走IP分流(TCP)       22   国内出口       OK
+国内站 走IP分流(UDP)       23   国内UDP出口    OK
+```
+
 ---
 
 ## 三、校验
@@ -250,7 +354,7 @@ python3 tools/validate_baseconfig.py sfm/src/baseConfig.yaml tools/kernel_fields
 
 ```
 === 校验 sfm/src/baseConfig.yaml
-rule_set: 38 个, route.rules: 22 条, dns.rules: 22 条, inbounds: 3, outbounds: 7
+rule_set: 38 个, route.rules: 24 条, dns.rules: 22 条, inbounds: 3, outbounds: 8
 ✅ 无阻断性错误
 ```
 
@@ -259,7 +363,7 @@ rule_set: 38 个, route.rules: 22 条, dns.rules: 22 条, inbounds: 3, outbounds
 
 另外生成了 `docs/box.preview.json`，是模拟剥离 `notice`/`enabled`、过滤 `enabled: false`
 之后的最终产物，可以直接肉眼核对内核会看到什么。启用后的实际规模：
-入站 2 个（mixed + tun）、route.rules 16 条、dns.rules 22 条。
+入站 2 个（mixed + tun）、出站 8 个、route.rules 18 条、dns.rules 22 条。
 
 ### notice 能写在哪
 

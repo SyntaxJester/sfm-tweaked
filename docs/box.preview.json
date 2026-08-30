@@ -596,6 +596,13 @@
     {
       "tag": "国内出口",
       "type": "selector",
+      "interrupt_exist_connections": true,
+      "outbounds": "本机直连"
+    },
+    {
+      "tag": "国内UDP出口",
+      "type": "selector",
+      "interrupt_exist_connections": true,
       "outbounds": "本机直连"
     },
     {
@@ -1049,6 +1056,7 @@
         "outbound": "本机直连"
       },
       {
+        "network": "tcp",
         "clash_mode": [
           "规则模式-我要免流-RedirHost",
           "规则模式-我要免流-FakeIP",
@@ -1072,6 +1080,29 @@
         "outbound": "国内出口"
       },
       {
+        "clash_mode": [
+          "规则模式-我要免流-RedirHost",
+          "规则模式-我要免流-FakeIP",
+          "规则模式-我要免流-混合模式"
+        ],
+        "rule_set": [
+          "推送服务-域名",
+          "强制直连-域名",
+          "字节跳动-域名",
+          "大陆相关-域名",
+          "海外公司-大陆服务-域名",
+          "苹果-域名",
+          "谷歌-大陆服务-域名",
+          "微软-大陆服务-域名",
+          "亚马逊-大陆服务-域名",
+          "海外CDN-大陆服务-域名",
+          "游戏平台-大陆服务-域名",
+          "哔哩哔哩-域名",
+          "哔哩哔哩2-域名"
+        ],
+        "outbound": "国内UDP出口"
+      },
+      {
         "rule_set": "海外公司-域名",
         "outbound": "国外出口"
       },
@@ -1088,6 +1119,7 @@
         "outbound": "本机直连"
       },
       {
+        "network": "tcp",
         "clash_mode": [
           "规则模式-我要免流-RedirHost",
           "规则模式-我要免流-FakeIP",
@@ -1098,6 +1130,18 @@
           "大陆相关-IP"
         ],
         "outbound": "国内出口"
+      },
+      {
+        "clash_mode": [
+          "规则模式-我要免流-RedirHost",
+          "规则模式-我要免流-FakeIP",
+          "规则模式-我要免流-混合模式"
+        ],
+        "rule_set": [
+          "推送服务-IP",
+          "大陆相关-IP"
+        ],
+        "outbound": "国内UDP出口"
       }
     ],
     "final": "国外出口",

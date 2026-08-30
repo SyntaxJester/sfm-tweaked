@@ -7,7 +7,7 @@
 
 - **原作者**：Puer_Nya — GitHub [@PuerNya](https://github.com/PuerNya)
 - **基于原版**：`version=202408160739`，`versionCode=8`
-- **本版本**：`version=202608292125`，`versionCode=9`
+- **本版本**：`version=202608310745`，`versionCode=10`
 - **模块描述**（原文）：借助魔法的力量使用 sing-box 进行代理
 
 ### 原作者的作品（本仓库原样收录，未作任何修改）
@@ -44,19 +44,35 @@
 
 | 文件 | 改动 |
 |---|---|
-| `sfm/src/baseConfig.yaml` | 修 5 个失效 URL、新增 20 个 rule_set、新增 4 条 route.rules 与 3 条 dns.rules、订正保留地址规则、为 tun 补 `route_exclude_address` |
+| `sfm/src/baseConfig.yaml` | 修 5 个失效 URL、新增 20 个 rule_set、新增 `国内UDP出口` 出站与 TCP/UDP 分离规则、订正保留地址规则、为 tun 补 `route_exclude_address` |
 | `sfm/RuleProviders/路由后台-域名.json` | 新建，48 条 |
 | `sfm/RuleProviders/推送服务-域名.json` | 4 → 27 条 |
 | `sfm/RuleProviders/强制直连-域名.json` | 9 → 33 条 |
 | `sfm/RuleProviders/强制代理-域名.json` | 3 → 31 条 |
 | `sfm/RuleProviders/跳过覆写.json` | 7 → 32 条 |
-| `module.prop` | `version` 202408160739 → 202608292125、`versionCode` 8 → 9、`name` 加「（二改版）」、`author` 加二改者。`id` 与 `description` 保持不变 |
+| `module.prop` | `version` 202408160739 → 202608310745、`versionCode` 8 → 10、`name` 加「（二改版）」、`author` 加二改者。`id` 与 `description` 保持不变 |
 | `tools/`、`docs/`、`.github/` | 新增：配置校验器、内核字段表、文档、CI（均不参与刷入） |
 
 `module.prop` 中 `id` 不改是因为改了会被当成另一个模块，`/data/adb/sfm` 的增量更新逻辑失效；
 `description` 不改是因为 `service.sh` 用 `sed -i "6c..."` 按行号改写它，第 6 行必须继续是它。
 
 **未做**：任何逆向修改、功能重写、二进制替换或重新编译。
+
+## 设计参考
+
+`network: tcp` + 独立 UDP 出站这个思路，参考了社区里另一份二改
+**「神秘啊神秘（儒雅二改）」v202505252012**（作者署名 `Puer_Nya（儒雅二改）`）。
+它在 `route.rules` 里用成对规则把 TCP 与 UDP 分开，让 http 类免流出站只承载 TCP、
+UDP 走独立出口，从而避免 UDP 撞上 TCP-only 出站被内核关闭。
+
+本仓库只借用了这个**设计思路**，具体实现是按本仓库的规则结构重写的，
+且**没有采用**它的以下部分：
+
+- 它的 `singBox` 内核（1.9 基线，比本仓库的 1.10 更旧，
+  会失去 `route_exclude_address` / `auto_redirect`）
+- 它内置的 `bin/node`（100 MB）、`bin/aapt`、`bin/ps` 等第三方二进制
+- 它的 `ProxyProviders/` 与 `FileProviders/`（含真实机场凭据）
+- 它的 `port: [446, 30443]` 之类绑定特定服务的规则
 
 ## 上游数据与项目
 

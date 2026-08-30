@@ -61,8 +61,8 @@ diff /tmp/a.txt /tmp/b.txt
 
 | | 原版 | 本仓库 |
 |---|---|---|
-| `version` | `202408160739` | `202608292125` |
-| `versionCode` | `8` | `9` |
+| `version` | `202408160739` | `202608310745` |
+| `versionCode` | `8` | `10` |
 | `id` | `SingBox_For_Magisk` | 不变 |
 | `description` | 借助魔法的力量使用 sing-box 进行代理 | 不变 |
 

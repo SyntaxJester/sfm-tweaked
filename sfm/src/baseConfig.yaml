@@ -6,7 +6,7 @@
 # 基于原版：version=202408160739 / versionCode=8
 #
 # 二改：SyntaxJester  https://github.com/SyntaxJester/sfm-tweaked
-# 本版本：version=202608292125 / versionCode=9
+# 本版本：version=202608310745 / versionCode=10
 # 改动详情见 docs/CHANGES.md
 #
 # 注意：本文件是面板的工作缓存，面板每次保存配置都会重写它（含删除本注释）。
@@ -474,7 +474,20 @@ outbounds:
     type: selector
   - tag: 国内出口
     type: selector
+    interrupt_exist_connections: true
     outbounds: 本机直连
+    notice: >-
+      免流节点通常是 type: http，只承载 TCP。所以下面 route.rules 里把国内流量
+      拆成了 network: tcp（走这里）和不带 network（走「国内UDP出口」）两条。
+      在面板里给本出站挂免流节点即可，UDP 不会再撞过来。
+  - tag: 国内UDP出口
+    type: selector
+    interrupt_exist_connections: true
+    outbounds: 本机直连
+    notice: >-
+      国内 UDP 专用出口，默认兜底「本机直连」——不免流但保证微信语音 / 手游 / QUIC 可用。
+      有支持 UDP 的国内节点（vmess / hysteria2 / tuic 等）就在面板里挂到这里；
+      没有就保持直连。切勿挂 type: http 的免流节点，那样 UDP 一样会被关。
   - tag: 全局代理
     type: selector
     providers: all
@@ -846,7 +859,8 @@ route:
         - 哔哩哔哩-域名
         - 哔哩哔哩2-域名
       outbound: 本机直连
-    - clash_mode:
+    - network: tcp
+      clash_mode:
         - 规则模式-我要免流-RedirHost
         - 规则模式-我要免流-FakeIP
         - 规则模式-我要免流-混合模式
@@ -865,6 +879,30 @@ route:
         - 哔哩哔哩-域名
         - 哔哩哔哩2-域名
       outbound: 国内出口
+      notice: 国内域名的 TCP 走免流出站
+    - clash_mode:
+        - 规则模式-我要免流-RedirHost
+        - 规则模式-我要免流-FakeIP
+        - 规则模式-我要免流-混合模式
+      rule_set:
+        - 推送服务-域名
+        - 强制直连-域名
+        - 字节跳动-域名
+        - 大陆相关-域名
+        - 海外公司-大陆服务-域名
+        - 苹果-域名
+        - 谷歌-大陆服务-域名
+        - 微软-大陆服务-域名
+        - 亚马逊-大陆服务-域名
+        - 海外CDN-大陆服务-域名
+        - 游戏平台-大陆服务-域名
+        - 哔哩哔哩-域名
+        - 哔哩哔哩2-域名
+      outbound: 国内UDP出口
+      notice: >-
+        承接上一条漏下来的 UDP。免流出站是 http 类型只支持 TCP，
+        UDP 撞上去内核会直接关连接（missing supported outbound），
+        客户端随后重试 TCP 的流量反而按普通计费走掉。这条把 UDP 引到专用出口。
     - rule_set: 海外公司-域名
       outbound: 国外出口
       notice: 国外地址代理（减少域名解析）
@@ -877,7 +915,8 @@ route:
         - 大陆相关-IP
       outbound: 本机直连
       notice: cn ip 和 apple push ip 分流
-    - clash_mode:
+    - network: tcp
+      clash_mode:
         - 规则模式-我要免流-RedirHost
         - 规则模式-我要免流-FakeIP
         - 规则模式-我要免流-混合模式
@@ -885,7 +924,16 @@ route:
         - 推送服务-IP
         - 大陆相关-IP
       outbound: 国内出口
-      notice: cn ip 和 apple push ip 分流
+      notice: cn ip 和 apple push ip 分流（TCP）
+    - clash_mode:
+        - 规则模式-我要免流-RedirHost
+        - 规则模式-我要免流-FakeIP
+        - 规则模式-我要免流-混合模式
+      rule_set:
+        - 推送服务-IP
+        - 大陆相关-IP
+      outbound: 国内UDP出口
+      notice: cn ip 和 apple push ip 分流（UDP，走专用出口）
   final: 国外出口
   auto_detect_interface: true
   find_process: true
