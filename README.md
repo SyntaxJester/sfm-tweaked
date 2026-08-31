@@ -19,7 +19,7 @@ Magisk / KernelSU / APatch 模块 **神秘啊神秘（SingBox_For_Magisk）** �
 | 原模块 | 神秘啊神秘 / `SingBox_For_Magisk` |
 | **原作者** | **Puer_Nya** — GitHub [@PuerNya](https://github.com/PuerNya) |
 | 基于原版 | `version=202408160739` / `versionCode=8` |
-| 本版本 | `version=202608310745` / `versionCode=10` |
+| 本版本 | `version=202608312000` / `versionCode=11` |
 | 内核 | [PuerNya/sing-box](https://github.com/PuerNya/sing-box) fork，基线 `1.10.0-alpha.29-067c81a7` |
 
 **模块的全部功能实现都是原作者的作品** —— 定制 sing-box 内核、Node.js 面板、
@@ -39,7 +39,7 @@ Magisk / KernelSU / APatch 模块 **神秘啊神秘（SingBox_For_Magisk）** �
 
 ## 与原版的差异
 
-改动只有 7 个文件，其余 **58 个文件与原版 sha256 完全一致**：
+改动 7 个文件、新增若干，其余 **58 个文件与原版 sha256 完全一致**：
 
 | 文件 | 变化 |
 |---|---|
@@ -50,6 +50,8 @@ Magisk / KernelSU / APatch 模块 **神秘啊神秘（SingBox_For_Magisk）** �
 | `sfm/RuleProviders/强制代理-域名.json` | 3 → 31 条 |
 | `sfm/RuleProviders/跳过覆写.json` | 7 → 32 条 |
 | `module.prop` | `version` / `versionCode` / 署名，见下 |
+| `sfm/RuleProviders/*.srs` | **新增 16 个预置规则集**（原版 16 个 → 32 个），首启不需联网 |
+| `sfm/src/log/.gitkeep`、`sfm/ProxyProviders/.gitkeep` | **新增占位** —— git 不跟踪空目录，缺了会导致全新安装起不来 |
 | `tools/`、`docs/` | **新增**，校验器与文档（不参与刷入） |
 
 `sfm/src/baseConfig.yaml` 的主要变化：规则集 18 → 38、
@@ -68,8 +70,8 @@ Magisk / KernelSU / APatch 模块 **神秘啊神秘（SingBox_For_Magisk）** �
 -versionCode=8
 -author=Puer_Nya
 +name=神秘啊神秘（二改版）
-+version=202608310745
-+versionCode=10
++version=202608312000
++versionCode=11
 +author=Puer_Nya（二改：SyntaxJester）
 ```
 
@@ -304,6 +306,59 @@ sha256sum -c UPSTREAM_SHA256.txt | grep -cv ': OK$'   # 应输出 0
 刷入后重启，访问面板（KernelSU/APatch 用 WebUI，Magisk 用自动安装的 App），
 初始密码 `node`。
 
+### 端口与地址（容易搞混）
+
+| 地址 | 是什么 |
+|---|---|
+| `127.0.0.1:23333` | **神秘面板**（`webroot/index.html` 里的 meta refresh 就指向它） |
+| `127.0.0.1:9909` | Clash API（`experimental.clash_api.external_controller`），给 Dashboard 用，浏览器直接开是空的 |
+| `12306` | mixed 入站代理端口 |
+| `2333` | **不是端口** —— 是 `route.default_mark`，防流量回环用的 fwmark |
+
+### 面板打不开怎么查
+
+```bash
+su
+# 1. 进程在不在（node 是面板，singBox 是内核）
+pidof node && pidof singBox
+
+# 2. 看日志
+cat /data/adb/sfm/src/log/run.log     # 面板启动日志
+cat /data/adb/sfm/src/log/box.log     # 内核日志
+
+# 3. 端口有没有监听
+netstat -tunlp | grep -E '23333|9909'
+```
+
+常见原因：
+
+| 现象 | 原因 |
+|---|---|
+| `pidof node` 为空 | Termux 里没装 `nodejs`/`aapt`；或 `sfm/src/log/` 目录不存在（v202608312000 之前的两个版本有此 bug，已修） |
+| 面板能开但内核没起 | `box.log` 里若是 `initial rule-set` 失败 → 远程规则集下载不动。本版已预置全部 `.srs`，理论上不会再出现 |
+| 「无法连接神秘后端」 | node 没启动，同第一条 |
+
+### 已知问题（v202608312000 之前）
+
+`202608292125` 和 `202608310745` 两个版本的 zip **漏了两个空目录**
+`sfm/src/log/` 和 `sfm/ProxyProviders/`。git 不跟踪空目录，打包脚本自然收不到。
+
+- **覆盖安装看不出问题** —— 这两个目录是原版留下的
+- **删干净原版全新刷入就起不来** —— `service.sh:88`
+  `mv -f ${LOGDIR}/run.log ...` 重定向到不存在的目录，node 根本没启动；
+  `bundle` 自身的自检也会抛「日志文件夹缺失」
+
+如果你装的是那两个版本，手动补一下即可，不必重刷：
+
+```bash
+su
+mkdir -p /data/adb/sfm/src/log /data/adb/sfm/ProxyProviders
+reboot
+```
+
+本版已修，并加了三道 CI 门禁（打包前校验仓库路径、打包后校验 zip 路径、
+明确断言这两个目录存在）防止再犯。
+
 **覆盖刷入的注意事项** —— 原版 `customize.sh` 在检测到 `/data/adb/sfm` 已存在时会走
 「增量更新」分支，其中这两行会**把你现有的配置还原回去**：
 
@@ -345,11 +400,35 @@ nohup node /data/adb/sfm/bundle --enable-source-maps >/dev/null 2>/data/adb/sfm/
 pidof node && pidof singBox
 ```
 
-### 首次启动会下载规则集
+### 规则集已全部预置，首启不需要联网
 
-27 个远程规则集，约 3MB，走 `download_detour: 国外出口` ——
-**必须先有一个能用的国外节点**，否则 `initial rule-set` 失败、内核起不来。
-节点还没配好的话，先把这些 `rule_set` 的 `type` 临时改成 `local` 跑起来再说。
+`sfm/RuleProviders/` 里放了全部 **32 个 `.srs` 文件**（27 个远程规则集 + 5 个原版自带的本地集），
+所以首次启动**不联网也能起来**。
+
+这一点值得单独说，因为 `remote` 类型的 `rule_set` 有个容易踩的坑：
+
+```go
+// route/rule_set_remote.go:89
+if path, err := s.getPath(s.path); err == nil {
+    s.path = path
+    s.loadFromFile(path)          // 先读本地落盘文件
+}
+if s.lastUpdated.IsZero() {       // 本地没读到才联网
+    err := s.fetchOnce(ctx, startContext)
+    if err != nil {
+        return E.Cause(err, "initial rule-set: ", s.tag)   // 失败 → 内核起不来
+    }
+}
+```
+
+也就是说 `type: remote` 会**先尝试读 `path` 指向的本地文件**，读到了就跳过首次下载，
+之后按 `update_interval` 后台更新。所以预置 `.srs` 之后：
+
+- 没配节点也能启动，不会因为 `initial rule-set` 失败而卡死
+- 规则依然会自动更新（到点走 `download_detour: 国外出口` 拉新的）
+
+预置的文件是打包时从各上游拉的当天快照，合计约 1.3 MB。
+如果你想强制刷新，删掉对应 `.srs` 再重启即可。
 
 ### 回滚
 

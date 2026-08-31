@@ -26,6 +26,7 @@ jobs:
         run: |
           python3 tools/validate_baseconfig.py sfm/src/baseConfig.yaml tools/kernel_fields.txt
           sha256sum -c UPSTREAM_SHA256.txt
+          python3 tools/check_package.py --repo .
 
       - name: 检查 tag 与 module.prop 版本一致
         if: startsWith(github.ref, 'refs/tags/v')
@@ -44,6 +45,12 @@ jobs:
         run: |
           VER=$(grep '^version=' module.prop | cut -d= -f2)
           NAME="SingBox_For_Magisk-tweaked-${VER}.zip"
+
+          # 兜底：即使 git 里再丢了空目录，也保证 zip 里有
+          # （service.sh:88 会往 sfm/src/log/ 重定向；bundle 自检也查它）
+          mkdir -p sfm/src/log sfm/ProxyProviders
+          touch sfm/src/log/.gitkeep sfm/ProxyProviders/.gitkeep
+
           # 只打包刷入需要的内容 + 署名文件，排开发文件
           zip -r -q "$NAME" \
             META-INF sfm webroot \
@@ -51,9 +58,52 @@ jobs:
             post-fs-data.sh service.sh uninstall.sh \
             CREDITS.md LICENSE UPSTREAM_SHA256.txt \
             -x '.git/*' -x '.github/*' -x 'tools/*' -x 'docs/*'
+
           echo "name=$NAME" >> "$GITHUB_OUTPUT"
           echo "ver=$VER" >> "$GITHUB_OUTPUT"
           echo "sha=$(sha256sum "$NAME" | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
+
+      - name: 校验 zip 路径完整性
+        run: |
+          NAME="${{ steps.pack.outputs.name }}"
+          # 1. 必需目录/文件齐全，且无隐私残留
+          python3 tools/check_package.py --zip "$NAME"
+
+          # 2. 与原版逐路径比对（若仓库里放了 baseline 就跑）
+          if [ -f tools/baseline_paths.txt ]; then
+            echo "--- 对照 tools/baseline_paths.txt ---"
+            python3 - "$NAME" <<'PY'
+          import sys, zipfile
+          names = set(zipfile.ZipFile(sys.argv[1]).namelist())
+          # zip 里目录条目带尾斜杠；同时从文件路径补推目录
+          import os
+          have = set()
+          for n in names:
+              have.add(n)
+              if not n.endswith('/'):
+                  p = os.path.dirname(n)
+                  while p:
+                      have.add(p + '/')
+                      p = os.path.dirname(p)
+          need = [l.strip() for l in open('tools/baseline_paths.txt')
+                  if l.strip() and not l.startswith('#')]
+          miss = [p for p in need if p not in have]
+          if miss:
+              print('❌ 原版有、本包缺失:')
+              for m in miss:
+                  print('  -', m)
+              sys.exit(1)
+          print(f'✅ 原版 {len(need)} 个路径全部覆盖')
+          PY
+          fi
+
+          # 3. 明确断言两个空目录在（这是曾经踩过的坑）
+          unzip -l "$NAME" | grep -qE 'sfm/src/log/' \
+            || { echo "::error::zip 里缺少 sfm/src/log/ —— service.sh 会启动失败"; exit 1; }
+          unzip -l "$NAME" | grep -qE 'sfm/ProxyProviders/' \
+            || { echo "::error::zip 里缺少 sfm/ProxyProviders/"; exit 1; }
+          echo "两个必需空目录已确认存在"
+
           unzip -l "$NAME" | tail -3
 
       - uses: actions/upload-artifact@v4
@@ -80,14 +130,31 @@ jobs:
 
             ---
 
-            ### 改动摘要
+            ### 本版修复（重要）
 
-            - 修复 5 个已 404 的规则源（`UptonEdward/sing-geosite` 仓库已删除，
-              全新安装会因 `initial rule-set` 失败而起不来）
-            - 规则集 18 → 38，本地规则条目 30 → 170
+            **全新安装起不来的问题已修复。** 之前两个版本（`202608292125`、
+            `202608310745`）的 zip 里漏了两个空目录 `sfm/src/log/` 和
+            `sfm/ProxyProviders/` —— git 不跟踪空目录，打包脚本自然收不到。
+            覆盖安装时它们是原版留下的所以看不出问题，**删干净原版全新刷入就会**
+            死在 `service.sh:88` 的日志重定向上，node 根本没启动，
+            表现为面板「无法连接神秘后端」。
+
+            同时**预置了全部 27 个远程规则集的 `.srs` 文件**，
+            现在首次启动不联网也能起来（原先缺 16 个，没配好节点时
+            `initial rule-set` 失败会导致内核起不来）。
+
+            已加三道 CI 门禁防止再犯：打包前校验仓库路径、打包后校验 zip 路径、
+            明确断言那两个空目录存在。
+
+            ### 累计改动（相对原版）
+
+            - 修复 5 个已 404 的规则源（`UptonEdward/sing-geosite` 仓库已删除）
+            - 规则集 18 → 38，本地规则条目 30 → 170，全部预置 `.srs`
+            - TCP/UDP 分离：新增 `国内UDP出口`，免流出站只承载 TCP，
+              避免 UDP 撞上 `type: http` 出站被内核关闭后重试 TCP 白跑流量
             - 订正保留地址规则（`fc70::/10` 笔误；`ip_is_private` 会吃掉 FakeIP 的 v6 池）
             - tun 补 `route_exclude_address`，恢复投屏 / DLNA / mDNS / 打印机发现
-            - 新增 6 个默认关闭的开关位（BT 拦截、国内 QUIC 拦截等）
+            - 6 个默认关闭的开关位（BT 拦截、国内 QUIC 拦截等）
 
             ### 校验
 
@@ -98,5 +165,15 @@ jobs:
             ### 刷入前请确认
 
             arm64 设备、已装 Termux 且在 Termux 里执行过 `pkg install nodejs aapt`。
-            **已装原版的机器覆盖刷入后配置仍是旧的**（原版 `customize.sh` 会还原用户配置），
-            处理方式见 README「覆盖刷入的注意事项」。
+
+            刷入后若面板打不开，先查 `pidof node`：
+
+            ```
+            su
+            pidof node && pidof singBox
+            cat /data/adb/sfm/src/log/run.log      # 面板日志
+            cat /data/adb/sfm/src/log/box.log      # 内核日志
+            ```
+
+            面板地址是 `127.0.0.1:23333`（初始密码 `node`）。
+            `127.0.0.1:9909` 是 Clash API，不是面板；`2333` 是 fwmark 不是端口。

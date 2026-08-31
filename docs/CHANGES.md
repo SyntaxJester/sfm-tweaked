@@ -1,7 +1,7 @@
 # sfm 规则提供者 / 路由 / 入站 完善说明
 
 针对 `SingBox_For_Magisk`（`神秘啊神秘`）原版 v202408160739 的配置层改造，
-本版本 `version=202608310745` / `versionCode=10`。
+本版本 `version=202608312000` / `versionCode=11`。
 只改配置与规则文件，`bundle` / `converter` / `singBox` 三个二进制不动。
 
 > 原模块作者：**Puer_Nya**（[@PuerNya](https://github.com/PuerNya)）。
@@ -332,7 +332,9 @@ B站 看视频(QUIC/UDP)      19   国内UDP出口    OK
 
 ## 三、校验
 
-写了 `tools/validate_baseconfig.py`，模拟 `bundle` 生成 `box.json` 的流程再按内核白名单核对。
+### 3.1 配置语义：`tools/validate_baseconfig.py`
+
+模拟 `bundle` 生成 `box.json` 的流程再按内核白名单核对。
 比 `singBox check` 的优势是不需要 root、不需要真机、能在写配置的当场跑。
 
 ```
@@ -364,6 +366,97 @@ rule_set: 38 个, route.rules: 24 条, dns.rules: 22 条, inbounds: 3, outbounds
 另外生成了 `docs/box.preview.json`，是模拟剥离 `notice`/`enabled`、过滤 `enabled: false`
 之后的最终产物，可以直接肉眼核对内核会看到什么。启用后的实际规模：
 入站 2 个（mixed + tun）、出站 8 个、route.rules 18 条、dns.rules 22 条。
+
+### 3.2 打包完整性：`tools/check_package.py`
+
+**这个是踩了坑之后加的。** 事故经过：
+
+`202608292125` 和 `202608310745` 两个版本的 zip 漏了两个空目录
+`sfm/src/log/` 和 `sfm/ProxyProviders/`。原因是 **git 不跟踪空目录** ——
+原版这两个目录是空的，`git add` 时没进仓库，CI 的 `zip -r` 自然收不到。
+
+后果分两种，这也是它没被及早发现的原因：
+
+- **覆盖安装完全正常** —— 这两个目录是原版留在 `/data/adb/sfm/` 里的
+- **删干净原版全新刷入就起不来**：
+
+```sh
+# service.sh:88
+mv -f ${LOGDIR}/run.log ${LOGDIR}/run.log.old      # ${LOGDIR} 不存在
+nohup node ${DATADIR}/bundle ... 2>${LOGDIR}/run.log &   # 重定向失败
+```
+
+node 根本没启动，用户看到的是面板「无法连接神秘后端」。
+`bundle` 自身的自检也会抛「日志文件夹缺失」：
+
+```js
+// bundle 里的 xh()
+if (!existsSync(Hr)) throw "资源文件夹缺失";   // ./src
+if (!existsSync(Rc)) throw "日志文件夹缺失";   // ./src/log  ← 死在这
+if (!existsSync(Dt)) throw "核心缺失";
+if (!existsSync(xr)) throw "核心配置缺失";
+```
+
+修法是三层：
+
+1. **`.gitkeep` 占位**（`sfm/src/log/.gitkeep`、`sfm/ProxyProviders/.gitkeep`），
+   并把 `.gitignore` 从忽略「目录」改成忽略「目录内容 + 白名单例外」：
+
+   ```gitignore
+   sfm/src/log/*
+   !sfm/src/log/.gitkeep
+   sfm/ProxyProviders/*
+   !sfm/ProxyProviders/.gitkeep
+   ```
+
+2. **CI 打包前 `mkdir -p` 兜底**，即使 git 里再丢也不会漏
+
+3. **三道校验**：
+   - `check_package.py --repo .`：仓库里必需目录/文件齐全、无隐私残留
+   - `check_package.py --zip xxx.zip`：打好的包同样检一遍
+   - 与 `tools/baseline_paths.txt`（原版 79 个路径的清单，含空目录）逐路径比对，
+     再单独 `grep` 断言那两个目录在 zip 里
+
+反向验证过：拿有问题的旧 zip 跑一遍，脚本确实报错：
+
+```
+=== 检查 zip m.zip
+    文件 68 个，目录 13 个
+❌ 错误 2:
+  - 缺少目录 sfm/ProxyProviders/
+  - 缺少目录 sfm/src/log/
+```
+
+还模拟了一遍全新安装（`cp -rf sfm/* → DATADIR` 然后往 `${LOGDIR}` 重定向），
+新包成功、旧包失败。
+
+`check_package.py` 顺带检查**不该出现**的东西，防止像社区里某些二改那样
+把隐私内容打进包：`sfm/src/appLabels.json`（已装应用列表 = 设备指纹）、
+`sfm/src/cache.db`（已选节点缓存）、`sfm/ProxyProviders/*.json`（机场凭据）、
+`sfm/src/log/*.log`（运行日志）。
+
+### 3.3 预置规则集：CI 校验格式与完整性
+
+`sfm/RuleProviders/` 里预置了全部 32 个 `.srs`。CI 会检查：
+
+- 每个文件的 magic 是 `SRS` 且 version ∈ {1, 2}（内核只认这两个）
+- `baseConfig.yaml` 里每个 `rule_set` 都有对应的落盘文件
+
+第二条是为了避免另一个坑：`type: remote` 的规则集若没有本地文件，
+首次启动必须联网下载，而 `route/rule_set_remote.go:96` 的失败是致命的：
+
+```go
+if s.lastUpdated.IsZero() {
+    err := s.fetchOnce(ctx, startContext)
+    if err != nil {
+        return E.Cause(err, "initial rule-set: ", s.tag)   // 整个内核起不来
+    }
+}
+```
+
+新用户刚刷完模块还没配节点，`download_detour: 国外出口` 必然拉不动，
+27 个远程规则集里任何一个失败都会让内核启动失败。预置 `.srs` 之后
+`loadFromFile` 先命中，跳过首次下载，之后照常后台更新。
 
 ### notice 能写在哪
 
@@ -429,9 +522,11 @@ cp -f  ${DATADIR}.old/${TIMESTAMP}/src/baseConfig.yaml  ${DATADIR}/src/baseConfi
 `writeFileSync(baseConfig.yaml.new)` 然后 rename 覆盖。所以要在模块服务停止时替换，
 否则会被面板写回的内容盖掉。
 
-首次启动会下载 27 个远程规则集（合计约 3MB），走 `download_detour: 国外出口` —— 
-必须先有一个能用的国外节点，否则 `initial rule-set` 失败、内核起不来。
-如果节点还没配好，临时把这些 `rule_set` 的 `type` 改成 `local` 跑起来再说。
+规则集已全部预置（`sfm/RuleProviders/` 里 32 个 `.srs`），首启不需要联网。
+`type: remote` 的规则集会先读 `path` 指向的本地文件
+（`route/rule_set_remote.go:89` 的 `loadFromFile`），读到了就跳过首次下载，
+之后按 `update_interval` 后台更新。所以没配节点也能启动，
+不会因为 `initial rule-set` 失败而卡死。
 
 ### 回滚
 

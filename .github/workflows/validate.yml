@@ -3,10 +3,11 @@ name: 校验配置
 on:
   push:
     paths:
-      - 'sfm/src/baseConfig.yaml'
-      - 'sfm/RuleProviders/**'
+      - 'sfm/**'
       - 'tools/**'
+      - 'module.prop'
       - 'UPSTREAM_SHA256.txt'
+      - '.gitignore'
   pull_request:
   workflow_dispatch:
 
@@ -27,8 +28,25 @@ jobs:
         run: python3 tools/validate_baseconfig.py sfm/src/baseConfig.yaml tools/kernel_fields.txt
 
       - name: 核对原作者文件未被改动
+        run: sha256sum -c UPSTREAM_SHA256.txt
+
+      - name: 校验仓库路径完整性
+        run: python3 tools/check_package.py --repo .
+
+      - name: 核对必需空目录已被 git 跟踪
         run: |
-          sha256sum -c UPSTREAM_SHA256.txt
+          # git 不跟踪空目录 —— 必须靠 .gitkeep 占位，
+          # 否则 zip 里会缺 sfm/src/log/，全新安装时 service.sh:88 重定向失败
+          fail=0
+          for f in sfm/src/log/.gitkeep sfm/ProxyProviders/.gitkeep; do
+            if git ls-files --error-unmatch "$f" >/dev/null 2>&1; then
+              echo "  OK  $f 已跟踪"
+            else
+              echo "::error::$f 未被 git 跟踪 —— zip 会缺这个目录"
+              fail=1
+            fi
+          done
+          exit $fail
 
       - name: 校验本地规则集 JSON
         run: |
@@ -47,6 +65,38 @@ jobs:
                   print(f'  ERR {p.name}: {e}')
                   bad += 1
           sys.exit(1 if bad else 0)
+          PY
+
+      - name: 校验预置 srs 文件格式与完整性
+        run: |
+          python3 - <<'PY'
+          import glob, os, sys, yaml
+          # 1. 格式：内核只认 SRS v1 / v2
+          bad = []
+          for p in sorted(glob.glob('sfm/RuleProviders/*.srs')):
+              d = open(p, 'rb').read(4)
+              if d[:3] != b'SRS':
+                  bad.append((p, 'magic 错误'))
+              elif d[3] not in (1, 2):
+                  bad.append((p, f'不支持的 version {d[3]}'))
+          # 2. 完整性：每个 rule_set 都要有对应的落盘文件，
+          #    这样首次启动不联网也能起来（否则 initial rule-set 失败、内核起不来）
+          cfg = yaml.safe_load(open('sfm/src/baseConfig.yaml'))
+          miss = []
+          for r in cfg['route']['rule_set']:
+              p = 'sfm/RuleProviders/' + os.path.basename(r['path'])
+              if not os.path.exists(p):
+                  miss.append(f"{r['tag']} → {p}")
+          print(f"预置 .srs {len(glob.glob('sfm/RuleProviders/*.srs'))} 个")
+          if bad:
+              print('❌ 格式异常:')
+              for p, why in bad:
+                  print(f'  - {p}: {why}')
+          if miss:
+              print('❌ rule_set 缺少预置文件（首启需联网，节点未配好会导致内核起不来）:')
+              for m in miss:
+                  print('  -', m)
+          sys.exit(1 if (bad or miss) else 0)
           PY
 
       - name: 探测远程规则源可用性

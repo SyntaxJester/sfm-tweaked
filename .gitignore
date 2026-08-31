@@ -9,16 +9,26 @@ __pycache__/
 *.py[cod]
 
 # 运行时产物（不应提交）
+# 注意：这里只忽略目录「内容」，不能忽略目录本身 ——
+# sfm/ProxyProviders/ 和 sfm/src/log/ 必须随 zip 一起存在，否则：
+#   · service.sh:88  mv -f ${LOGDIR}/run.log ...  重定向失败，node 起不来
+#   · bundle 自检 existsSync(./src/log) 抛「日志文件夹缺失」
+# 所以用 .gitkeep 占位 + 白名单例外，别把目录整体 ignore。
 box.json
-src/cache.db
+sfm/box.json
 sfm/src/cache.db
-sfm/src/log/
 sfm/src/appLabels.json
 sfm/src/modulePath
 sfm/src/geoip.db*
 sfm/src/geosite.db*
 sfm/src/sharedBaseConfig.yaml
-sfm/ProxyProviders/*.json
+
+sfm/src/log/*
+!sfm/src/log/.gitkeep
+
+sfm/ProxyProviders/*
+!sfm/ProxyProviders/.gitkeep
+
 start
 install
 
@@ -28,4 +38,3 @@ install
 
 # 打包产物
 *.zip
-!*.srs
